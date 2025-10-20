@@ -1,0 +1,4 @@
+should have a working example
+create a full setup and run tutorial
+3 figures (high level just component communicating, UML diagram, Workflow diagram(can be seperate))
+proof of concept

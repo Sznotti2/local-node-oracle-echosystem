@@ -1,0 +1,28 @@
+[Log]
+Level = 'debug'  # Use 'info' or 'warn' for production
+
+[WebServer]
+AllowOrigins = '*'  # Allow all origins for dev (restrict in production)
+SecureCookies = false  # Disable for local dev
+
+[WebServer.TLS]
+HTTPSPort = 0  # Disable HTTPS for local dev
+
+[Feature]
+LogPoller = true  # Enable log poller for better event handling
+UICSAKeys = true  # Enable CSA keys in UI
+
+# Hardhat local Network
+[[EVM]]
+ChainID = '31337'
+Enabled = true
+FinalityDepth = 1
+LogPollInterval = '5s'
+MinIncomingConfirmations = 1
+
+	[[EVM.Nodes]]
+	Name = 'hardhat_local_01'
+	# IMPORTANT: Chainlink expects a websocket primary client for subscriptions
+	HTTPURL = 'http://localhost:8545'
+	WSURL = 'ws://localhost:8545'	# WSURL must be ws:// (or wss:// for TLS). Chainlink uses WS to subscribe to events.
+	SendOnly = false
