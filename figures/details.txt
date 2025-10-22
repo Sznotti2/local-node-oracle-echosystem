@@ -1,0 +1,32 @@
+Consumer builds request & pays LINK
+sendOperatorRequestTo(operatorAddr, request, payment) (high level) or low level: LinkToken.transferAndCall(operatorAddr, payment, requestBytes). 
+Chainlink Documentation -> https://docs.chain.link/any-api/api-reference
+
+
+LINK token transfer triggers Operator contract entrypoint
+Operator receives the transfer via ERC-677 mechanism: onTokenTransfer(from, amount, data) or transferAndCall hooks → Operator parses data and calls operatorRequest(...) internally. 
+Chainlink Documentation -> https://docs.chain.link/architecture-overview/architecture-request-model
+
+
+Operator emits on-chain request event (OracleRequest / OracleRequested)
+Node watches this event and reads request payload (job spec id, requestId, callback address + function selector, request params).
+
+
+Chainlink Node executes job (external adapter / HTTP GET to your local random API)
+Node calls your local API endpoint (e.g. POST http://host:port/random or GET /random?min=1&max=100) and processes response.
+
+
+Node returns result on-chain by calling Operator fulfillment API
+operatorContract.fulfillOracleRequest2(requestId, payment, callbackAddress, callbackFunctionId, expiration, data) (or fulfillOracleRequest in some older flows). Node supplies the data payload. 
+Chainlink Documentation -> https://docs.chain.link/chainlink-nodes/contracts/operator
+
+
+Operator verifies the fulfillment and calls the Consumer's callback function
+Operator invokes callbackAddress.callbackFunctionId(requestId, resultData) (the actual call to your consumer contract).
+
+
+Consumer callback writes the randomness into contract state and emits an event RandomnessFulfilled(requestId, value).
+
+
+https://docs.chain.link/getting-started/conceptual-overview
+https://github.com/ethereum/EIPs/issues/677

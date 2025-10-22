@@ -176,8 +176,6 @@ HTTPURL = 'http://localhost:8545'
 EOF
 ```
 
-**Replace the URLs with your actual RPC endpoints from Step 5.**
-
 ### Create secrets.toml file
 ```bash
 cat > secrets.toml << 'EOF'
@@ -189,7 +187,7 @@ URL = 'postgresql://postgres:password123456789@127.0.0.1:5432/chainlink-local?ss
 EOF
 ```
 
-**Important:** Replace `password123456789` with the actual PostgreSQL password you set in Step 2.
+**Important:** Replace `password123456789` with the actual PostgreSQL password you set.
 
 ## Run Chainlink Node
 

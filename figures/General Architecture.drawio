@@ -1,0 +1,90 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0" version="28.2.7">
+  <diagram name="Page-1" id="bZSlwoQzVeyPpNrvHO9O">
+    <mxGraphModel dx="1505" dy="649" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-1" target="4hWRAzYbri2Q0nYWaJxR-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-11" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;transferAndCall&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-3">
+          <mxGeometry x="-0.1403" y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-1" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Consumer Contract&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-2" target="4hWRAzYbri2Q0nYWaJxR-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-12" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;onTokenTransfer&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-5">
+          <mxGeometry x="-0.2354" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-2" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;LinkToken&lt;/font&gt;" style="whiteSpace=wrap;html=1;rounded=1;fillColor=#D5E8D4;strokeColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="300" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-4" target="4hWRAzYbri2Q0nYWaJxR-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-14" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Oracle Request&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-7">
+          <mxGeometry x="-0.1177" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-4" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Operator Contract&lt;/font&gt;" style="whiteSpace=wrap;html=1;rounded=1;fillColor=#D5E8D4;strokeColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="570" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-18" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-6" target="4hWRAzYbri2Q0nYWaJxR-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-19" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;HTTP request&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-18">
+          <mxGeometry x="0.025" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-6" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Oracle Node&lt;/font&gt;" style="whiteSpace=wrap;html=1;rounded=1;fillColor=#A9C4EB;strokeColor=#007FFF;" vertex="1" parent="1">
+          <mxGeometry x="830" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-8" value="" style="endArrow=classic;html=1;rounded=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-4" target="4hWRAzYbri2Q0nYWaJxR-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="340" as="sourcePoint" />
+            <mxPoint x="470" y="340" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="630" y="200" />
+              <mxPoint x="100" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-9" value="Label" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;rounded=1;" connectable="0" vertex="1" parent="4hWRAzYbri2Q0nYWaJxR-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-10" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;calback&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-8">
+          <mxGeometry x="0.0221" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-15" value="" style="endArrow=classic;html=1;rounded=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="4hWRAzYbri2Q0nYWaJxR-6" target="4hWRAzYbri2Q0nYWaJxR-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="370" as="sourcePoint" />
+            <mxPoint x="450" y="320" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="890" y="400" />
+              <mxPoint x="630" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-16" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;fulfillOracleRequest&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rounded=1;" vertex="1" connectable="0" parent="4hWRAzYbri2Q0nYWaJxR-15">
+          <mxGeometry x="-0.0028" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4hWRAzYbri2Q0nYWaJxR-17" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;API&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9C4EB;strokeColor=#007FFF;" vertex="1" parent="1">
+          <mxGeometry x="830" y="130" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
