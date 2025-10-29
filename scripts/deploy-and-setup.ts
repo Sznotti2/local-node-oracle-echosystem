@@ -34,7 +34,7 @@ async function main() {
 
   // Mint test LINK to deployer so we can fund the consumer and the node
   const grantRoleTx = await link.grantMintRole(deployer.address);
-	await grantRoleTx.wait();
+  await grantRoleTx.wait();
   const mintAmount = ethers.utils.parseUnits("100", 18);
   const txMint = await link.mint(deployer.address, mintAmount);
   await txMint.wait();

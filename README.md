@@ -245,11 +245,6 @@ npx hardhat run scripts/checkWeather.ts --network localhost
 # Switch to postgres user
 sudo -u postgres psql
 
-# Set password for postgres user (use a strong password)
-\password postgres
-# Enter password: password123456789
-# Confirm password: password123456789
-
 # Drop database for Chainlink
 DROP DATABASE "chainlink-local";
 

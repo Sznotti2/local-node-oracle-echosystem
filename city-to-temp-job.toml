@@ -1,0 +1,42 @@
+type              = "directrequest"
+schemaVersion     = 1
+name              = "Get city temperature > Uint256"
+maxTaskDuration   = "0s"
+contractAddress   = "YOUR_ORACLE_CONTRACT_ADDRESS"
+evmChainID        = "31337"
+minIncomingConfirmations = 0
+
+observationSource = """
+    decode_log   [type="ethabidecodelog"
+                  abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
+                  data="$(jobRun.logData)"
+                  topics="$(jobRun.logTopics)"]
+
+    decode_cbor  [type="cborparse" data="$(decode_log.data)"]
+
+    city         [type="string" data="$(decode_cbor.city)"]
+    geo_fetch    [type="http" method=GET
+                  url="https://api.geoapify.com/v1/geocode/search"
+                  query="{\"text\": $(city), \"format\": \"json\", \"apiKey\": \"${GEOAPIFY_KEY}\"}"]
+    geo_parse    [type="jsonparse" path="results,0" data="$(geo_fetch)"]
+    lat          [type="jsonparse" path="lat" data="$(geo_fetch)"]
+    lon          [type="jsonparse" path="lon" data="$(geo_fetch)"]
+
+    weather_fetch [type="http" method=GET
+                   url="https://api.open-meteo.com/v1/forecast"
+                   query="{\"latitude\": $(lat), \"longitude\": $(lon), \"current_weather\": \"true\"}"]
+    temp_parse    [type="jsonparse" path="current_weather,temperature" data="$(weather_fetch)"]
+
+    multiply     [type="multiply" input="$(temp_parse)" times="$(decode_cbor.times)"]
+
+    encode_data  [type="ethabiencode" abi="(bytes32 requestId, uint256 value)" data="{ \\"requestId\\": $(decode_log.requestId), \\"value\\": $(multiply) }"]
+    encode_tx    [type="ethabiencode"
+                  abi="fulfillOracleRequest2(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes calldata data)"
+                  data="{\\"requestId\\": $(decode_log.requestId), \\"payment\\": $(decode_log.payment), \\"callbackAddress\\": $(decode_log.callbackAddr), \\"callbackFunctionId\\": $(decode_log.callbackFunctionId), \\"expiration\\": $(decode_log.cancelExpiration), \\"data\\": $(encode_data)}"]
+    submit_tx    [type="ethtx" to="YOUR_ORACLE_CONTRACT_ADDRESS" data="$(encode_tx)"]
+
+    decode_log -> decode_cbor -> city -> geo_fetch -> geo_parse -> lat
+    lat -> weather_fetch
+    lon -> weather_fetch
+    weather_fetch -> temp_parse -> multiply -> encode_data -> encode_tx -> submit_tx
+"""
