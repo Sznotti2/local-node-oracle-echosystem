@@ -1,8 +1,9 @@
 type = "directrequest"
 schemaVersion = 1
 name = "Get > Uint256"
+externalJobID = "1d320673-e762-45aa-b12a-c929a794d2b2"
 maxTaskDuration = "0s"
-contractAddress = "YOUR_ORACLE_CONTRACT_ADDRESS"
+contractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 evmChainID = "31337"
 minIncomingConfirmations = 0
 observationSource = """
@@ -12,17 +13,17 @@ observationSource = """
                   topics="$(jobRun.logTopics)"]
 
     decode_cbor  [type="cborparse" data="$(decode_log.data)"]
-    fetch        [type="http" method=GET url="$(decode_cbor.get)" allowUnrestrictedNetworkAccess="true"]
+    fetch        [type="http" method=GET url="$(decode_cbor.apiUrl)" allowUnrestrictedNetworkAccess="true"]
     parse        [type="jsonparse" path="$(decode_cbor.path)" data="$(fetch)"]
 
-    multiply     [type="multiply" input="$(parse)" times="$(decode_cbor.times)"]
+    multiply     [type="multiply" input="$(parse)" times="100"]
 
     encode_data  [type="ethabiencode" abi="(bytes32 requestId, uint256 value)" data="{ \\"requestId\\": $(decode_log.requestId), \\"value\\": $(multiply) }"]
     encode_tx    [type="ethabiencode"
                   abi="fulfillOracleRequest2(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes calldata data)"
                   data="{\\"requestId\\": $(decode_log.requestId), \\"payment\\":   $(decode_log.payment), \\"callbackAddress\\": $(decode_log.callbackAddr), \\"callbackFunctionId\\": $(decode_log.callbackFunctionId), \\"expiration\\": $(decode_log.cancelExpiration), \\"data\\": $(encode_data)}"
                   ]
-    submit_tx    [type="ethtx" to="YOUR_ORACLE_CONTRACT_ADDRESS" data="$(encode_tx)"]
+    submit_tx    [type="ethtx" to="0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512" data="$(encode_tx)"]
 
     decode_log -> decode_cbor -> fetch -> parse -> multiply -> encode_data -> encode_tx -> submit_tx
 """

@@ -167,7 +167,7 @@ cd ~/.chainlink-local
 ```bash
 cat > config.toml << 'EOF'
 [[EVM]]
-ChainID = '11155111'
+ChainID = '31337'
 
 [[EVM.Nodes]]
 Name = 'local hardhat'
@@ -284,7 +284,7 @@ If you see "Too Many Requests" errors:
 
 ```toml
 [[EVM]]
-ChainID = '11155111'
+ChainID = '31337'
 
 [EVM.HeadTracker]
 HistoryDepth = 10

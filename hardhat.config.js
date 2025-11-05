@@ -73,9 +73,18 @@ module.exports = {
                 enabled: false,
             },
             chainId: 31337,
+			mining: {
+				auto: true,
+				interval: 5000 // Mine a block every 5 seconds
+			},
         },
         localhost: {
+			url: "http://127.0.0.1:8545",
             chainId: 31337,
+			mining: {
+				auto: true,
+				interval: 3000 // Mine a block every 3 seconds
+			},
         },
 		// Uncomment and configure the networks you want to use
         // sepolia: {

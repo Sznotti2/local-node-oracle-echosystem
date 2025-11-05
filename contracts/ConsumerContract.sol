@@ -23,7 +23,6 @@ Premiums are stored in policy.premium but the code relies on contract ETH balanc
 
 /**
  * @title Consumer Contract for Weather Insurance using Chainlink Oracle
- * @author Tóth Bálint
  * @notice This contract allows users to purchase weather insurance policies
  *         that pay out based on temperature data provided by a Chainlink oracle.
  */
@@ -67,7 +66,7 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
         _setChainlinkToken(_link);
         _setChainlinkOracle(_oracle);		// used by ChainlinkClient for sendChainlinkRequest
 		operator = _oracle;
-        fee =  (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job);
+        fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job);
     }
 
     // Sends a Chainlink request to the Operator contract.
@@ -78,8 +77,12 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
             this.fulfillTemperature.selector
         );
 
-		req._add("city", city);
-        req._add("times", "100");
+		string memory apiUrl = string.concat(
+			"http://127.0.0.1:5000/weather?city=",
+			city
+		);
+		req._add("apiUrl", apiUrl);
+		req._add("path", "temperature"); // JSON path to extract
 
         bytes32 requestId = _sendChainlinkRequestTo(operator, req, fee);
         lastRequestId = requestId;
@@ -140,7 +143,10 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
         }
     }
 
-	function evaluatePoliciesForTest(string memory location, uint256 recordedTemp) external onlyOwner {
+	function evaluatePoliciesForTest(
+		string memory location,
+		uint256 recordedTemp
+		) external onlyOwner {
 		_evaluatePoliciesForLocation(stringToBytes32(location), recordedTemp);
 	}
 

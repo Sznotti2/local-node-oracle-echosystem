@@ -41,10 +41,10 @@ async function main() {
   console.log(`Minted ${ethers.utils.formatUnits(mintAmount, 18)} LINK to deployer`);
   
   // Fund ConsumerContract with LINK so it can make requests
-  const fundAmount = ethers.utils.parseUnits("5", 18);
+  const fundAmount = ethers.utils.parseUnits("100", 18);
   let tx = await link.transfer(consumer.address, fundAmount);
   await tx.wait();
-  console.log(`Funded ConsumerContract with 5 LINK`);
+  console.log(`Funded ConsumerContract with 100 LINK`);
 
   // Fund node with ETH
   // this is needed to pay for gas when fulfilling requests (writing to the blockchain)
