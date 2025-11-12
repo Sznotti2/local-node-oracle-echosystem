@@ -35,25 +35,25 @@ async function main() {
   // Mint test LINK to deployer so we can fund the consumer and the node
   const grantRoleTx = await link.grantMintRole(deployer.address);
   await grantRoleTx.wait();
-  const mintAmount = ethers.utils.parseUnits("100", 18);
+  const mintAmount = ethers.utils.parseUnits("1000", 18);
   const txMint = await link.mint(deployer.address, mintAmount);
   await txMint.wait();
   console.log(`Minted ${ethers.utils.formatUnits(mintAmount, 18)} LINK to deployer`);
   
   // Fund ConsumerContract with LINK so it can make requests
-  const fundAmount = ethers.utils.parseUnits("100", 18);
+  const fundAmount = ethers.utils.parseUnits("1000", 18);
   let tx = await link.transfer(consumer.address, fundAmount);
   await tx.wait();
-  console.log(`Funded ConsumerContract with 100 LINK`);
+  console.log(`Funded ConsumerContract with 1000 LINK`);
 
   // Fund node with ETH
   // this is needed to pay for gas when fulfilling requests (writing to the blockchain)
   const txEth = await deployer.sendTransaction({
     to: nodeWalletAddress,
-    value: ethers.utils.parseEther("5"),
+    value: ethers.utils.parseEther("50"),
   });
   await txEth.wait();
-  console.log("Node wallet funded with 5 ETH");
+  console.log("Node wallet funded with 50 ETH");
 
   // Write addresses to deploy-output.json
   const out = {

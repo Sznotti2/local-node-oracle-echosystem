@@ -63,7 +63,7 @@ async function stressTestOracleRequests(
         const startTime = Date.now();
         
         try {
-            // console.log(`[${requestNum}/${numRequests}] Sending request...`);
+            console.log(`[${requestNum}/${numRequests}] Sending request...`);
             
 			// Create a promise to catch the fulfillment event
 			let fulfillmentPromise: Promise<boolean>;
@@ -165,7 +165,7 @@ async function stressTestOracleRequests(
                 metrics.successfulRequests++;
                 metrics.minResponseTime = Math.min(metrics.minResponseTime, responseTime);
                 metrics.maxResponseTime = Math.max(metrics.maxResponseTime, responseTime);
-                // console.log(`[${requestNum}] ✅ Fulfilled in ${responseTime}ms`);
+                console.log(`[${requestNum}] ✅ Fulfilled in ${responseTime}ms`);
             } else {
 				// Check if it was actually fulfilled but we missed the event
 				try {

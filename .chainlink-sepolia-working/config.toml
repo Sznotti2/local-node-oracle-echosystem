@@ -1,5 +1,5 @@
 [Log]
-Level = 'debug'  # Use 'info' or 'warn' for production
+Level = 'info'  # Use 'info' or 'warn' for production
 
 [WebServer]
 AllowOrigins = '*'  # Allow all origins for dev (restrict in production)
@@ -33,7 +33,7 @@ SendOnly = false
 
 [EVM.Transactions]
 ForwardersEnabled = false
-MaxInFlight = 10	#  Limits concurrent transactions to avoid nonce conflicts
+MaxInFlight = 16	#  Limits concurrent transactions to avoid nonce conflicts
 MaxQueued = 250
 ReaperInterval = '1h'
 ReaperThreshold = '168h'
@@ -60,8 +60,8 @@ TipCapMin = '1 gwei'
     TransactionPercentile = 50
 
 [JobPipeline]
-MaxSuccessfulRuns = 1000  # Keep more successful runs
-ReaperInterval = '10m'      # Clean up every 10 minutes
+MaxSuccessfulRuns = 10000  # Keep more successful runs
+ReaperInterval = '20m'      # Clean up every 20 minutes
 ReaperThreshold = '2h'    # Delete runs older than 2 hours
 ResultWriteQueueDepth = 100
 
