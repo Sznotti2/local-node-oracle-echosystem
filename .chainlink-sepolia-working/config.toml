@@ -1,71 +1,57 @@
 [Log]
-Level = 'info'  # Use 'info' or 'warn' for production
+Level = 'warn' # debug would slow down I/O
+JSONConsole = true # Structured logging sometimes enables faster processing
 
 [WebServer]
-AllowOrigins = '*'  # Allow all origins for dev (restrict in production)
-SecureCookies = false  # Disable for local dev
+AllowOrigins = '*'
+SecureCookies = false
+HTTPWriteTimeout = '1m'
 
 [WebServer.TLS]
-HTTPSPort = 0  # Disable HTTPS for local dev
+HTTPSPort = 0
 
-[Feature]
-LogPoller = true  # Enable log poller (recommended)
+[Database]
+# Increase the number of database connections for parallel processing
+MaxIdleConns = 20 # default is 10
+# MaxOpenConns = 50
 
-[Telemetry]
-Enabled = false  # Disable telemetry for local dev
-
-# Hardhat local Network
 [[EVM]]
 ChainID = '31337'
 Enabled = true
+# Hardhat has instant finality, no need to wait for blocks
 FinalityDepth = 1
-FinalityTagEnabled = false	# Disables the finality tag check that was causing "finality violation" errors
-LogPollInterval = '2s'	# Faster polling (every 2 seconds instead of 5)
-MinIncomingConfirmations = 1
-LogBackfillBatchSize = 10  # Smaller batch size for dev
-BlockBackfillDepth = 10  # Less backfill needed
+# How often to poll for logs (in ms, important for HTTP but also affects WS fallback)
+LogPollInterval = '1s' 
 
 [[EVM.Nodes]]
-Name = 'hardhat_local_01'
-HTTPURL = 'http://localhost:8545'
-WSURL = 'ws://localhost:8545'	# WSURL must be ws:// (or wss:// for TLS). Chainlink uses WS to subscribe to events.
-SendOnly = false
+Name = 'Hardhat'
+# built from source:
+# HTTPURL = 'http://localhost:8545'
+# WSURL = 'ws://localhost:8545'
+# using docker image:
+HTTPURL = 'http://host.docker.internal:8545'
+WSURL = 'ws://host.docker.internal:8545'
+
+# --- CRITICAL PERFORMANCE SETTINGS ---
 
 [EVM.Transactions]
-ForwardersEnabled = false
-MaxInFlight = 16	#  Limits concurrent transactions to avoid nonce conflicts
-MaxQueued = 250
-ReaperInterval = '1h'
-ReaperThreshold = '168h'
-ResendAfterThreshold = '1m'	# Resends stuck transactions after 1 minute
+# This is the most important for stress testing:
+# How many transactions can be in the mempool at once (unconfirmed)
+MaxInFlight = 500 # default 16
+# How many transactions can wait in the DB for processing
+MaxQueued = 5000 # default 250
+# How often to check pending transactions
+ReaperInterval = '10s' # default 1h
+# How often to retry sending transactions
+ResendAfterThreshold = '10s' # default 1m
 
 [EVM.GasEstimator]
-Mode = 'FixedPrice'  # Use fixed gas price for local dev
-LimitDefault = 500000
-LimitMax = 500000
-LimitMultiplier = '1.0'
-BumpMin = '5 gwei'
-BumpPercent = 20
-BumpThreshold = 3
-BumpTxDepth = 10
-EIP1559DynamicFees = false	# Disables EIP-1559 (not needed for Hardhat)
-FeeCapDefault = '100 gwei'
-TipCapDefault = '1 gwei'
-TipCapMin = '1 gwei'
+# For local testing, it's advisable to use a fixed price to save on estimateGas calls
+Mode = 'FixedPrice' 
+[EVM.GasEstimator.BlockHistory]
+BlockHistorySize = 0 # No need to analyze history for gas price
 
-    [EVM.GasEstimator.BlockHistory]
-    BlockHistorySize = 1  # Minimal history for dev
-    CheckInclusionBlocks = 1
-    CheckInclusionPercentile = 50
-    TransactionPercentile = 50
-
-[JobPipeline]
-MaxSuccessfulRuns = 10000  # Keep more successful runs
-ReaperInterval = '20m'      # Clean up every 20 minutes
-ReaperThreshold = '2h'    # Delete runs older than 2 hours
-ResultWriteQueueDepth = 100
-
-[Database]
-MaxIdleConns = 10
-MaxOpenConns = 20
-MigrateOnStartup = true
+# [JobPipeline]
+# Increase the number of jobs that can run in parallel
+# MaxSuccessfulRuns = 1000
+# ResultWriteQueueDepth = 1000

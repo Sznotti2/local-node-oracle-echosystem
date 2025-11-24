@@ -226,8 +226,7 @@ EOF
 cd ~/.chainlink-local
 chainlink -c config.toml -s secrets.toml local n
 ```
-
-Use the email and password you just created to log in.
+You can access the node gui now.
 
 ### Node Web GUI
 
@@ -253,14 +252,14 @@ Log in with your API credentials
 ```bash
 npx hardhat node
 #open a new terminal
-python3 scripts/api.py runserver
+node scripts/api.js
 # open a new terminal
 cd .chainlink-local/
 chainlink -c config.toml -s secrets.toml local n
 #open a new terminal
 npx hardhat run scripts/deploy-and-setup.ts --network localhost
 # copy the Functions Router Address and add it to functions-job.toml
-npx hardhat run scripts/checkWeather.ts --network localhost
+npx hardhat run scripts/stress-test.ts --network localhost
 ```
 
 [Node Web GUI](#node-web-gui)
@@ -271,7 +270,7 @@ DISABLE FIREWALL or the node cannot connect to the EVM!
 # Hardhat needs to be started differently
 npx hardhat node --hostname 0.0.0.0 --port 8545
 #open a new terminal
-python3 scripts/api.py runserver
+node scripts/api.js
 # open a new terminal
 # if container exists: docker rm -f cl-postgres
 docker run -d --name cl-postgres --network chainlink-net \
@@ -282,10 +281,10 @@ docker run -d --name cl-postgres --network chainlink-net \
   postgres:18
 # if container exists: docker rm -f chainlink
 cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start
-# open a new terminal
+# open a new termscripts/inal
 npx hardhat run scripts/deploy-and-setup.ts --network localhost
 # copy the Functions Router Address and add it to functions-job.toml
-npx hardhat run scripts/checkWeather.ts --network localhost
+npx hardhat run scripts/stress-test.ts --network localhost
 ```
 
 if you can't see ndoe activity in the EVMs logs diable firewall

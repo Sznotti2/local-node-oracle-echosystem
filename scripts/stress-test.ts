@@ -243,7 +243,7 @@ async function main() {
     // await stressTestOracleRequests(consumer, jobId, 10, false);
 
     // Test 2: Concurrent Oracle Requests (stress test)
-    await stressTestOracleRequests(consumer, jobId, 10, true);
+    await stressTestOracleRequests(consumer, jobId, 1000, true);
 
     console.log(`\n=== All Stress Tests Complete ===`);
 }
