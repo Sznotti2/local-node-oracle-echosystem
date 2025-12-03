@@ -1,5 +1,5 @@
-import hre from "hardhat";
-const { ethers } = hre as any;
+import { ethers } from "hardhat";
+
 
 // --- KONFIGURÁCIÓ ---
 const CONSUMER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
@@ -10,17 +10,17 @@ const TEST_SCENARIOS = [
     10,
     15,
     20, // kiegészült a transaction résszel
-    25,
+    25,  /*
     50,
-    75, 
+    75,
     100,
     150,
     200,
     250, 
     500,
-    750,
-    1000,
-    1500, /*
+    750, // careful with these!
+    1000, 
+    1500,
     2000, 
     3000,*/
 ];
@@ -152,7 +152,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
                     }
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.log("Polling error (ignoring):", e.message);
         }
 

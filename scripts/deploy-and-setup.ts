@@ -1,30 +1,26 @@
-// scripts/bootstrap.ts
-import fs from "fs";
-import path from "path";
-import hre from "hardhat";
-const { ethers } = hre as any;
+import { ethers } from "hardhat";
 
 async function main() {
   const nodeWalletAddress = process.env.CHAINLINK_NODE_ADDRESS || process.env.NODE_WALLET;
   
   if (!nodeWalletAddress) {
-    throw new Error("CHAINLINK_NODE_ADDRESS env variable is missing!");
+    throw new Error("CHAINLINK_NODE_ADDRESS or NODE_WALLET env variable is missing!");
   }
 
   const [deployer] = await ethers.getSigners();
   console.log("Deployer:", deployer.address);
 
   // Deploy LinkToken
-  const LinkToken = await ethers.getContractFactory("LinkToken");
-  const link = await LinkToken.deploy();
-  await link.deployed();
-  console.log("LinkToken deployed at: ", link.address);
+  const link = await ethers.deployContract("LinkToken");
+  await link.waitForDeployment();
+  const linkAddress = await link.getAddress();
+  console.log("LinkToken deployed at: ", linkAddress);
 
   // Deploy Operator
-  const Operator = await ethers.getContractFactory("Operator");
-  const operator = await Operator.deploy(link.address, deployer.address);
-  await operator.deployed();
-  console.log("Operator deployed at: ", operator.address);
+  const operator = await ethers.deployContract("Operator", [linkAddress, deployer.address]);
+  await operator.waitForDeployment();
+  const operatorAddress = await operator.getAddress();
+  console.log("Operator deployed at: ", operatorAddress);
 
   // Authorize the node wallet address
   const txAuth = await operator.setAuthorizedSenders([nodeWalletAddress]);
@@ -32,22 +28,22 @@ async function main() {
   console.log("Authorized sender set:", nodeWalletAddress);
 
   // Deploy ConsumerContract
-  const ConsumerContract = await ethers.getContractFactory("ConsumerContract");
-  const consumer = await ConsumerContract.deploy(link.address, operator.address);
-  await consumer.deployed();
-  console.log("ConsumerContract deployed at:", consumer.address);
+  const consumer = await ethers.deployContract("ConsumerContract", [linkAddress, operatorAddress]);
+  await consumer.waitForDeployment();
+  const consumerAddress = await consumer.getAddress();
+  console.log("ConsumerContract deployed at:", consumerAddress);
 
   // Mint test LINK to deployer so we can fund the consumer and the node
   const grantRoleTx = await link.grantMintRole(deployer.address);
   await grantRoleTx.wait();
-  const mintAmount = ethers.utils.parseUnits("1000", 18);
+  const mintAmount = ethers.parseUnits("1000", 18);
   const txMint = await link.mint(deployer.address, mintAmount);
   await txMint.wait();
-  console.log(`Minted ${ethers.utils.formatUnits(mintAmount, 18)} LINK to deployer`);
+  console.log(`Minted ${ethers.formatUnits(mintAmount, 18)} LINK to deployer`);
   
   // Fund ConsumerContract with LINK so it can make requests
-  const fundAmount = ethers.utils.parseUnits("1000", 18);
-  let tx = await link.transfer(consumer.address, fundAmount);
+  const fundAmount = ethers.parseUnits("1000", 18);
+  let tx = await link.transfer(consumerAddress, fundAmount);
   await tx.wait();
   console.log(`Funded ConsumerContract with 1000 LINK`);
 
@@ -55,7 +51,7 @@ async function main() {
   // this is needed to pay for gas when fulfilling requests (writing to the blockchain)
   const txEth = await deployer.sendTransaction({
     to: nodeWalletAddress,
-    value: ethers.utils.parseEther("50"),
+    value: ethers.parseEther("50"),
   });
   await txEth.wait();
   console.log("Node wallet funded with 50 ETH");

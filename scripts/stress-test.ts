@@ -1,5 +1,5 @@
-import hre from "hardhat";
-const { ethers } = hre as any;
+import { ethers } from "hardhat";
+
 
 const CITIES = [
 	"London", "Paris", "NewYork", "Tokyo", "Sydney",
@@ -29,7 +29,7 @@ function calculateStats(times: number[]) {
 async function main() {
 	//const REQUEST_COUNT = 10;		// num of requests to send
 	//const REQUEST_COUNT = 15;
-	//const REQUEST_COUNT = 20;
+	const REQUEST_COUNT = 20;
 	//const REQUEST_COUNT = 25;
 	//const REQUEST_COUNT = 50;
 	//const REQUEST_COUNT = 75;
@@ -37,8 +37,8 @@ async function main() {
 	//const REQUEST_COUNT = 150;
 	//const REQUEST_COUNT = 200;
 	//const REQUEST_COUNT = 250;
-	//const REQUEST_COUNT = 500;
-	const REQUEST_COUNT = 750;
+	// const REQUEST_COUNT = 500;
+	//const REQUEST_COUNT = 750;
 	//const REQUEST_COUNT = 1000;
 	//const REQUEST_COUNT = 1500;
 	//const REQUEST_COUNT = 2000;

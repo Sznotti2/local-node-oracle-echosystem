@@ -5,23 +5,6 @@ import "@chainlink/contracts/src/v0.8/operatorforwarder/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 
 /**
- * Notes, consequences and suggestions
-
-Premiums are stored in policy.premium but the code relies on contract ETH balance to pay claims (premiums + any owner funding). There is no enforced relation that a policy’s premium covers its payout.
- * Potential issues:
- * Unbounded loops on policiesByLocation can run out of gas if many policies exist for a location.
- * Using call for payouts is good for avoiding gas stipend issues, but marking paid before external call is a pattern that must be paired with reentrancy protection. Consider checks‑effects‑interactions or a pull-payment pattern.
- * If payout fails, the code marks active = false and paid = false, which prevents automatic retries and may leave claim unresolved.
- * No way to cancel policies or refund premiums.
- * Improvements to consider: use a pull-payment escrow, add reentrancy guard, require minimum collateral/ensure payouts <= premium or require owner-funded pool, paginate/limit evaluations to avoid gas limits, and expose functions for owner to top-up contract before large payouts.
- * Suggested improvements:
- * Add ability for purchaser to cancel active, unpaid policies and get a refund of premium.
- * Add a pull‑payment claim withdraw flow.
- * Add reentrancy protection and gas‑safety guards.
- * Make premiums vs payouts enforceable (e.g., require premium >= some fraction of payout).
- */
-
-/**
  * @title Consumer Contract for Weather Insurance using Chainlink Oracle
  * @notice This contract allows users to purchase weather insurance policies
  *         that pay out based on temperature data provided by a Chainlink oracle.
