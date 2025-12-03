@@ -20,31 +20,23 @@ MaxOpenConns = 200 # default is 100, need to add -c max_connections=200 for post
 [[EVM]]
 ChainID = '31337'
 Enabled = true
+LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 MinIncomingConfirmations = 1 # default 3
-FinalityDepth = 1 # default 50, transactions are final after we see them in one block
 # How often to poll for logs (in ms, important for HTTP but also affects WS fallback)
 LogPollInterval = '1s' # default 15s, reduce idle time
-LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
-
-[[EVM.Nodes]]
-Name = 'Hardhat'
-# built from source:
-# HTTPURL = 'http://localhost:8545'
-# WSURL = 'ws://localhost:8545'
-# using docker image:
-HTTPURL = 'http://host.docker.internal:8545'
-WSURL = 'ws://host.docker.internal:8545'
+FinalityDepth = 1 # default 50, transactions are final after we see them in one block
+NoNewHeadsThreshold = '0' # Default '3m'
 
 [EVM.Transactions]
 # This is the most important for stress testing:
 # How many transactions can be in the mempool at once (unconfirmed)
-MaxInFlight = 256 # default 16
+MaxInFlight = 512 # default 16
 # How many transactions can wait in the DB for processing
 MaxQueued = 5000 # default 250
 # How often to check pending transactions
 ReaperInterval = '10s' # default 1h
 # How often to retry sending transactions, if hardhat block interval is less than 1s, this should be less than that
-ResendAfterThreshold = '1m' # default 1m
+ResendAfterThreshold = '10s' # default 1m
 
 [EVM.GasEstimator]
 # For local testing, it's advisable to use a fixed price to save on estimateGas calls
@@ -56,10 +48,16 @@ PriceDefault = '1 gwei' # default '100 gwei', automatically set by ChainID, in c
 # it keeps blocks in memory to use as a basis for calculating a percentile gas price.
 BlockHistorySize = 0 # default 8
 
+[EVM.NodePool]
+#  how many consecutive polls must fail in order to mark a node as unreachable.
+PollFailureThreshold = 1000 # default 5, Set to zero to disable poll checking.
+
 [JobPipeline]
 # keep the last 50 successful runs in the DB and UI, setting to 0 increases performance
 MaxSuccessfulRuns = 50 # default 10000
 # ResultWriteQueueDepth = 1000
 
-[Telemetry]
-Enabled = false  # to solve "no telemetry endpoint found" warnings
+[[EVM.Nodes]]
+Name = 'Hardhat'
+HTTPURL = 'http://hardhat:8545'
+WSURL = 'ws://hardhat:8545'

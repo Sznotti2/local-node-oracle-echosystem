@@ -1,0 +1,166 @@
+NE KAPCSOLD KI AZ AUTO MINE-T, LEGYE AUTO-MINE = TURE ÉS AZ INTERVALT HAGY EL !!!!
+
+"A fejlesztői környezet egységesítése és a hálózati kommunikáció stabilitása érdekében a teljes architektúrát (Blokklánc szimulátor, Oracle Node, Adatbázis, External API) konténerizáltuk (Docker Compose). Ez a megközelítés (Microservices Architecture) eliminálta a gazdagép és a konténerek közötti hálózati címfordításból (NAT) eredő instabilitást, és biztosította a tesztkörnyezet platformfüggetlen reprodukálhatóságát."
+
+
+ezt lehet kezelni kell
+chainlink    | 2025-12-03T10:54:37.866Z [WARN]  RPC latency warning: consider using faster endpoints or reviewing network conditions - FilterLogs latency of 2.155988733s exceeded threshold of 700ms (70% of block production time 1s) logpoller/latency_monitor.go:50  logger=EVM.31337 version=2.29.0@10bd946 
+chainlink    | 2025-12-03T10:58:54.932Z [ERROR] TxAttempt has been unconfirmed for more than max duration txmgr/resender.go:200            Hash=0x9a13725271638470bd754a7d627d5c21ecad402a1bd8bbd91b553103067c0676 fromAddress=0x727BBd3073Ee8d9B91937B1ae6eeC7230ac72633 logger=EVM.31337.Txm.Resender maxDuration=20 stacktrace=github.com/smartcontractkit/chainlink-framework/chains/txmgr.(*Resender[...]).logStuckAttempts
+chainlink    | 	/go/pkg/mod/github.com/smartcontractkit/chainlink-framework/chains@v0.0.0-20250717121125-2350c82883e2/txmgr/resender.go:200
+chainlink    | github.com/smartcontractkit/chainlink-framework/chains/txmgr.(*Resender[...]).resendUnconfirmed
+chainlink    | 	/go/pkg/mod/github.com/smartcontractkit/chainlink-framework/chains@v0.0.0-20250717121125-2350c82883e2/txmgr/resender.go:148
+chainlink    | github.com/smartcontractkit/chainlink-framework/chains/txmgr.(*Resender[...]).runLoop
+chainlink    | 	/go/pkg/mod/github.com/smartcontractkit/chainlink-framework/chains@v0.0.0-20250717121125-2350c82883e2/txmgr/resender.go:121 txFee={GasPrice: 1 gwei, GasFeeCap: <nil>, GasTipCap: <nil>} txID=3146 version=2.29.0@10bd946
+
+
+
+500 transaction alap configgal:
+while creating transaction: Txm#CreateTransaction: cannot create transaction; too many unstarted transactions in the queue (250/250). WARNING: Hitting EVM.Transactions.MaxQueued is a sanity limit and should never happen under normal operation. Unless you are operating with very high throughput, this error is unlikely to be a problem with your Chainlink node configuration, and instead more likely to be caused by a problem with your eth node's connectivity.
+
+
+
+
+hardhat interval mining-ot 1000-ől 5000-re emelve megváltozik a teljesítmény
+Block Time Dependency:
+
+auto = false
+interval = 1000
+================================================
+              TEST REPORT                       
+================================================
+Requests Sent:      100
+Responses Received: 100
+Success Rate:       100.0%
+Total Test Time:    8.16 sec
+Effective TPS:      12.25
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4020 ms
+Max: 4159 ms
+Avg: 4110.32 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 7 ms
+Max: 4011 ms
+Avg: 3572.37 ms
+================================================
+
+auto = false
+interval = 5000
+================================================
+              TEST REPORT                       
+================================================
+Requests Sent:      100
+Responses Received: 100
+Success Rate:       100.0%
+Total Test Time:    20.19 sec
+Effective TPS:      4.95
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4034 ms
+Max: 4183 ms
+Avg: 4132.56 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 15891 ms
+Max: 16041 ms
+Avg: 15941.91 ms
+================================================
+
+5s blokkidőnél: A node átlagos válaszideje ~15.9s. Ez kb. $3 * Blokkidő.
+1s blokkidőnél: A node átlagos válaszideje ~3.5s. Ez kb. $3.5 * Blokkidő.
+
+Következtetés: 
+A jelenlegi konfigurációban a Chainlink node-nak átlagosan 3-4 blokknyi időre van szüksége egy teljes körhöz
+(Esemény észlelése -> Feldolgozás -> Tranzakció beküldése -> Bányászás).
+
+
+
+[Feature]
+LogPoller = true
+
+RPC Hívások: Minden új blokknál meghívja az eth_getLogs parancsot a Hardhat felé.
+Adatbázis Írás (A fő lassító tényező): Ha talál releváns eseményt (pl. OracleRequest), 
+azt azonnal beírja a Postgres adatbázisba egy táblába, hogy kezelni tudja a lánc-elágazásokat (reorgs). Ez I/O művelet.
+
+Bár a LogPoller funkció kikapcsolása elméletileg csökkentené az adatbázis terhelését (I/O overhead), 
+a Direct Request modell eseményvezérelt természete miatt ez a komponens kritikus fontosságú. 
+A LogPoller felelős a blokklánc események (Event Logs) megbízható észleléséért és a lánc-reorganizációk kezeléséért. 
+Ezért a teljesítmény növelését nem a funkció kikapcsolásával, 
+hanem az adatbázis-kapcsolatok skálázásával (MaxOpenConns) és a job pipeline tisztításával (MaxSuccessfulRuns) értük el.
+
+
+
+
+a szűk keresztmetszet (bottleneck) nálad jelenleg már nem az adatbázis írása, hanem:
+	A Hardhat sebessége (blokkidő).
+	A Hálózati késleltetés (Node <-> Hardhat kommunikáció).
+	A Postgres kapcsolatok száma (MaxOpenConns).
+
+
+
+harhat egyértelműen bottleneck, mivel block interval 100ms esetén szétesik a kapcsolat amit a node-dal létesít.
+A 100ms blokkidő + a stressz tesztek sorozata túlterheli a Hardhat beépített JSON-RPC szerverét, 
+ami egy idő után elkezdi dobálni a kapcsolatokat (WebSocket timeout), majd teljesen elérhetetlenné válik.
+
+RPC latency warning ... exceeded threshold of 70ms:
+	Ez az első jele a bajnak. A Chainlink Node próbálja lekérni a logokat, de a Hardhat több mint 173ms alatt válaszol. 
+	Mivel a blokkidő 100ms, a Hardhat egyszerűen nem bírja az iramot. "Le van maradva".
+subscription Err channel prematurely closed:
+	A Hardhat WebSocket szervere bontotta a kapcsolatot. 
+	Ez akkor történik, ha a Node túl sok adatot kér egyszerre, és a Hardhat memóriája vagy CPU-ja betelik.
+no live nodes available:
+	A Chainlink Node "halottnak" nyilvánította a Hardhat-et, mert az nem válaszol a Health Check-re vagy a kérésekre. 
+	Innentől kezdve a Node nem csinál semmit, csak próbál újracsatlakozni.
+
+
+1. [Feature] LogPoller = true
+	Default: false
+
+	Mit csinál: Ez kapcsolja be a Chainlink Node új generációs eseményfigyelő rendszerét (Event Listening System). A régi rendszer (EthLog) egyszerűen feliratkozott a blokklánc eseményekre. A LogPoller ezzel szemben aktívan pásztázza a blokkokat, és minden releváns eseményt (logot) lement a saját Postgres adatbázisába, mielőtt feldolgozná azokat.
+
+	Miért kritikus nálad: A Direct Request modell (amit a Consumer contractod használ) és a modern Chainlink funkciók megkövetelik ezt. Ha ez false lenne, a Node nem venné észre a RequestCreated eseményeket, így el sem indulna a feldolgozás.
+
+	Technikai háttér: A LogPoller biztosítja a "Reorg Protection"-t (lánc-reorganizáció elleni védelmet). Ha a blokkláncon visszarendeződés történik, a LogPoller az adatbázisban is képes visszagörgetni az állapotot, így a Node nem hajt végre érvénytelen kéréseket.
+
+2. [EVM.Transactions] MaxInFlight = 200
+	Default: 16
+
+	Mit csinál: Ez a paraméter határozza meg a Párhuzamosítási Határt (Concurrency Limit). Azt adja meg, hogy hány olyan tranzakciója lehet a node-nak egyszerre a hálózaton (a mempoolban), amelyeket már elküldött (broadcasted), de még nem kerültek be véglegesen egy blokkba (unconfirmed).
+
+	A stressz tesztben: Az alapértelmezett 16 egy szigorú "fojtás" (throttle). Amikor te 100 kérést küldtél másodpercenként, a Node a 16. után megállt, és várta, hogy azok beérjenek. Ez okozta a lassú throughputot.
+
+	A módosítás hatása: A 200-ra emeléssel (vagy 2000-re a nagy tesztnél) lebontottad ezt a mesterséges korlátot ("Vertical Scaling"), lehetővé téve a Node számára, hogy kihasználja a Hardhat gyors blokkidejét.
+
+3. [EVM.Transactions] MaxQueued = 5000
+	Default: 250
+
+	Mit csinál: Ez a Belső Puffer Mérete. Ha a fenti MaxInFlight betelik (pl. mind a 200 slot foglalt), az új tranzakciók ebbe a várólistába (Queue) kerülnek. Ez védi a node-ot a memóriatúlcsordulástól.
+
+	A stressz tesztben: Amikor "burst" tesztet futtatsz (pl. 3000 kérés egyszerre), és a MaxInFlight "csak" 200, akkor 2800 kérésnek várakoznia kell. Ha a MaxQueued csak 250 lenne, a Node a 450. kérés után elkezdené eldobálni (drop) a feladatokat hibaüzenettel.
+
+	A módosítás hatása: Az 5000-re emelés biztosítja, hogy hirtelen terheléscsúcsok (spikes) esetén se vesszenek el tranzakciók, hanem biztonságosan várakozzanak a sorukra.
+
+4. [EVM.Transactions] ReaperInterval = '1s'
+	Default: 1h (1 óra)
+
+	Mit csinál: Ez a "Takarító" (Garbage Collector) gyakorisága a tranzakciókezelőben. A Reaper feladata, hogy átnézze az adatbázist, és a már véglegesített (finalized) tranzakciókat kivegye az aktív listából, felszabadítva a helyet a MaxInFlight slotokban.
+
+	Miért kellett módosítani? Alapértelmezésben (1 óra) a Chainlink úgy van beállítva, hogy spóroljon az adatbázis erőforrásokkal. De a te tesztkörnyezetedben a blokkidő 100ms-500ms. Ha a Reaper csak óránként futna, a MaxInFlight slotok pillanatok alatt "betelnének" már kész tranzakciókkal, amiket a node még nem takarított ki.
+
+	A módosítás hatása: Az 1s beállítás biztosítja, hogy a MaxInFlight slotok azonnal felszabaduljanak, amint egy tranzakció bekerült a blokkba, így a Node folyamatosan, megállás nélkül tud új kéréseket fogadni.
+
+5. [JobPipeline] MaxSuccessfulRuns = 50
+	Default: 10000
+
+	Mit csinál: Ez az Adatbázis Karbantartási (Pruning) Limit. Azt mondja meg, hogy hány befejezett feladat (Job Run) részletes adatait (inputok, outputok, időbélyegek) őrizze meg az adatbázisban.
+
+	A probléma forrása (Database Locking): Az alapértelmezett 10 000-es értéknél a Node ritkán, de hatalmas adagokban töröl. Amikor eléred a 10 000-et, a Node megpróbál egyszerre több száz/ezer sort törölni. A Postgres adatbázis ilyenkor "zárolja" (Lock) a táblát az írás elől, amíg a törlés tart. Ez okozta azt a jelenséget, hogy a Node időnként percekre "lefagyott".
+
+	A módosítás hatása: Az 50-re csökkentés "mikro-takarításokat" eredményez. Minden egyes új futás után töröl egy régit. Ez a művelet milliszekundumokig tart, nem okoz adatbázis zárolást, így a rendszer teljesítménye egyenletes (smooth) marad hosszú távú terhelés alatt is.
+
+

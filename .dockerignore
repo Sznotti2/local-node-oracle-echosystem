@@ -1,0 +1,17 @@
+node_modules
+.git
+.github
+api.log
+chainlink-data
+chainlink.log
+chainlink-db-data
+.chainlink-sepolia-working
+hadhat.log
+gas-report.txt
+logs
+artifacts
+cache
+typechain-types
+coverage
+coverage.json
+Thesis

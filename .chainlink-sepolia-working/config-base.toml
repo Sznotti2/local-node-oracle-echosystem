@@ -1,0 +1,22 @@
+[Feature]
+LogPoller = true
+
+[Log]
+Level = 'warn'
+
+[WebServer]
+AllowOrigins = '*'
+SecureCookies = false
+
+[WebServer.TLS]
+HTTPSPort = 0
+
+[[EVM]]
+ChainID = '31337'
+Enabled = true
+LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+
+[[EVM.Nodes]]
+Name = 'Hardhat'
+HTTPURL = 'http://host.docker.internal:8545'
+WSURL = 'ws://host.docker.internal:8545'

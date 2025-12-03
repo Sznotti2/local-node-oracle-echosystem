@@ -1,0 +1,22 @@
+# Dockerfile.hardhat
+FROM node:20
+# FROM node:20-alpine # try if works
+# FROM node:20-slim # try if works
+
+WORKDIR /app
+
+# psql (a setup-hoz) és a curl (a healthcheck-hez)
+RUN apt-get update && apt-get install -y postgresql-client curl bash && rm -rf /var/lib/apt/lists/*
+
+# CSAK a függőségeket definiáló fájlokat másoljuk
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# A teljes projekt másolása (hogy a hardhat.config.ts is ott legyen)
+COPY . .
+
+# Hardhat port
+EXPOSE 8545
+
+# Hardhat indítása
+CMD ["npx", "hardhat", "node", "--hostname", "0.0.0.0"]

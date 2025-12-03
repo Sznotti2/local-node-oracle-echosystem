@@ -12,7 +12,7 @@ HTTPSPort = 0  # Disable HTTPS for local dev
 LogPoller = true  # Enable log poller (recommended)
 
 [Telemetry]
-Enabled = false  # Disable telemetry for local dev
+Enabled = false  # to solve "no telemetry endpoint found" warnings
 
 # Hardhat local Network
 [[EVM]]
@@ -20,7 +20,7 @@ ChainID = '31337'
 Enabled = true
 FinalityDepth = 1
 FinalityTagEnabled = false	# Disables the finality tag check that was causing "finality violation" errors
-LogPollInterval = '2s'	# Faster polling (every 2 seconds instead of 5)
+LogPollInterval = '2s'	# default 15s, faster polling for dev
 MinIncomingConfirmations = 1
 LogBackfillBatchSize = 10  # Smaller batch size for dev
 BlockBackfillDepth = 10  # Less backfill needed

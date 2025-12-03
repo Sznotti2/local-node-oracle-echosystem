@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # 1. HARDHAT BLOCKCHAIN
+  hardhat:
+    build:
+      context: .  
+      dockerfile: Dockerfile.hardhat
+    container_name: hardhat-node
+    ports:
+      - "8545:8545" # Hogy a teszt script a gépedről is elérje
+    networks:
+      - chainlink-net
+    volumes:
+      #- ./hardhat.config.ts:/app/hardhat.config.ts
+      - .:/app             # A teljes mappát betükrözzük
+      - /app/node_modules  # KIVÉTEL: A konténer saját node_modules-át használja, ne a gépedét!
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}', "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. EXTERNAL API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: local-api
+    volumes:
+      - ./scripts/api.js:/app/api.js
+    command: ["node", "api.js"]
+    ports:
+      - "5000:5000"
+    networks:
+      - chainlink-net
+
+  # 3. POSTGRES DATABASE
+  postgres:
+    image: postgres:17
+    container_name: cl-postgres
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5432:5432"
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 4. CHAINLINK NODE
+  chainlink:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink
+    depends_on:
+      postgres:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6688:6688"
+    volumes:
+      - ./chainlink-config:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545 # Belső hálózati cím
+    networks:
+      - chainlink-net
+    restart: on-failure
+
+networks:
+  chainlink-net:
+    driver: bridge

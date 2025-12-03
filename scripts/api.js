@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 
 const port = 5000;
+const ip = '0.0.0.0';
 
 const CITY_TEMPERATURES = {
     "London": 15,
@@ -20,6 +21,8 @@ const CITY_TEMPERATURES = {
 app.get('/weather', (req, res) => {
     const city = req.query.city;
 
+	console.log(req.url);
+
     if (!city) {
         return res.status(400).json({ error: "City parameter is required" });
     }
@@ -33,14 +36,6 @@ app.get('/weather', (req, res) => {
     res.json({ temperature: temperature });
 });
 
-app.get('/get-random-city-temperature', (req, res) => {
-    const cities = Object.keys(CITY_TEMPERATURES);
-    const randomCity = cities[Math.floor(Math.random() * cities.length)];
-    const temperature = CITY_TEMPERATURES[randomCity];
-
-    res.json({ city: randomCity, temperature: temperature });
-});
-
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Express server running on http://0.0.0.0:${port}`);
+app.listen(port, ip, () => {
+    console.log(`Express server running on http://${ip}:${port}`);
 });

@@ -5,7 +5,12 @@ import hre from "hardhat";
 const { ethers } = hre as any;
 
 async function main() {
-  const nodeWalletAddress = process.env.NODE_WALLET
+  const nodeWalletAddress = process.env.CHAINLINK_NODE_ADDRESS || process.env.NODE_WALLET;
+  
+  if (!nodeWalletAddress) {
+    throw new Error("CHAINLINK_NODE_ADDRESS env variable is missing!");
+  }
+
   const [deployer] = await ethers.getSigners();
   console.log("Deployer:", deployer.address);
 
@@ -56,6 +61,7 @@ async function main() {
   console.log("Node wallet funded with 50 ETH");
 
   // Write addresses to deploy-output.json
+  /*
   const out = {
     LINK_ADDRESS: link.address,
     OPERATOR_ADDRESS: operator.address,
@@ -63,6 +69,8 @@ async function main() {
   };
   fs.writeFileSync(path.join(process.cwd(), "deploy-output.json"), JSON.stringify(out, null, 2));
   console.log("Wrote deploy-output.json");
+  */
+  console.log("Setup complete!");
 }
 
 main().catch((err) => {

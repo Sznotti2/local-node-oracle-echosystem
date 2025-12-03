@@ -1,0 +1,751 @@
+AUTO MINE ENABLED
+
+base config
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Status	| Reqs		| Rate	| Total Duration	| TPS	| Node Latency
+----------------------------------------------------------------------------------------
+✅ PASS	| 10		| 100%	| 3.121 s	| 3.2	| 1228 ms
+✅ PASS	| 15		| 100%	| 3.167 s	| 4.7	| 1164 ms
+✅ PASS	| 20		| 100%	| 3.195 s	| 6.3	| 1232 ms
+✅ PASS	| 25		| 100%	| 3.22 s	| 7.8	| 1398 ms
+✅ PASS	| 50		| 100%	| 5.385 s	| 9.3	| 2137 ms
+✅ PASS	| 75		| 100%	| 7.492 s	| 10.0	| 2719 ms
+✅ PASS	| 100		| 100%	| 8.892 s	| 11.2	| 3556 ms
+✅ PASS	| 150		| 100%	| 12.142 s	| 12.4	| 5040 ms
+✅ PASS	| 200		| 100%	| 16.538 s	| 12.1	| 6723 ms
+✅ PASS	| 250		| 100%	| 20.37 s	| 12.3	| 7724 ms
+❌ FAIL (Timeout)	| 500		| 60%	| 120.283 s	| 2.5	| 9684 ms
+========================================================================================
+base config + [EVM.Transactions]
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Status  | Reqs      | Rate  | Total Duration    | TPS   | Node Latency
+----------------------------------------------------------------------------------------
+✅ PASS  | 10        | 100%  | 3.116 s   | 3.2   | 1228 ms
+✅ PASS  | 15        | 100%  | 3.2 s     | 4.7   | 1164 ms
+✅ PASS  | 20        | 100%  | 3.264 s   | 6.1   | 1131 ms
+✅ PASS  | 25        | 100%  | 3.287 s   | 7.6   | 1113 ms
+✅ PASS  | 50        | 100%  | 3.383 s   | 14.8  | 1090 ms
+✅ PASS  | 75        | 100%  | 3.443 s   | 21.8  | 865 ms
+✅ PASS  | 100       | 100%  | 4.13 s    | 24.2  | 913 ms
+✅ PASS  | 150       | 100%  | 5.885 s   | 25.5  | 965 ms
+✅ PASS  | 200       | 100%  | 5.44 s    | 36.8  | 1899 ms
+✅ PASS  | 250       | 100%  | 7.6 s     | 32.9  | 1676 ms
+✅ PASS  | 500       | 100%  | 12.135 s  | 41.2  | 2497 ms
+❌ FAIL (Timeout)    | 750   | 0%    | 142.578 s | 0.0   | 0 ms
+========================================================================================
+
+
+complete config
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Status	| Reqs	| Rate	| TPS	| Node Latency	| Total Duration
+----------------------------------------------------------------------------------------
+✅ PASS	| 10		| 100%	| 4.7	| 1025 ms	| 2.107
+✅ PASS	| 15		| 100%	| 7.0	| 1027 ms	| 2.149
+✅ PASS	| 20		| 100%	| 9.2	| 1031 ms	| 2.166
+✅ PASS	| 25		| 100%	| 11.0	| 1038 ms	| 2.279
+✅ PASS	| 50		| 100%	| 14.4	| 1445 ms	| 3.468
+✅ PASS	| 75		| 100%	| 29.7	| 1065 ms	| 2.525
+✅ PASS	| 100		| 100%	| 25.8	| 1361 ms	| 3.877
+✅ PASS	| 150		| 100%	| 35.6	| 1416 ms	| 4.219
+✅ PASS	| 200		| 100%	| 43.2	| 1340 ms	| 4.627
+✅ PASS	| 250		| 100%	| 48.0	| 1360 ms	| 5.204
+✅ PASS	| 500		| 100%	| 52.7	| 2391 ms	| 9.488
+✅ PASS	| 750		| 100%	| 56.5	| 3619 ms	| 13.286
+✅ PASS	| 1000		| 100%	| 52.8	| 5365 ms	| 18.953
+✅ PASS	| 1500		| 100%	| 52.5	| 8414 ms	| 28.546
+✅ PASS	| 2000		| 100%	| 34.5	| 17662 ms	| 57.957
+✅ PASS	| 3000		| 100%	| 40.7	| 27049 ms	| 73.627
+======================================================================================== time --- tps --- latency
+complete config
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Reqs	| Success	| Rate	| TPS	| Node Latency	| Status
+----------------------------------------------------------------------------------------
+10	| 10		| 100%	| 4.8	| 1027 ms	| ✅ PASS
+20	| 20		| 100%	| 9.0	| 881 ms	| ✅ PASS
+25	| 25		| 100%	| 11.0	| 1032 ms	| ✅ PASS
+50	| 50		| 100%	| 20.3	| 1042 ms	| ✅ PASS
+75	| 75		| 100%	| 21.6	| 886 ms	| ✅ PASS
+100	| 100		| 100%	| 23.6	| 1240 ms	| ✅ PASS
+150	| 150		| 100%	| 31.0	| 955 ms	| ✅ PASS
+200	| 200		| 100%	| 37.8	| 1154 ms	| ✅ PASS
+250	| 250		| 100%	| 35.1	| 1656 ms	| ✅ PASS
+500	| 500		| 100%	| 36.7	| 2567 ms	| ✅ PASS
+1000	| 1000		| 100%	| 54.5	| 4829 ms	| ✅ PASS
+========================================================================================
+slightly inproved config
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Status	| Reqs		| Rate	| TPS	| Node Latency	| Total Duration
+----------------------------------------------------------------------------------------
+✅ PASS	| 10		| 100%	| 4.7	| 1028 ms	| 2.113
+✅ PASS	| 15		| 100%	| 7.1	| 1023 ms	| 2.12
+✅ PASS	| 20		| 100%	| 9.1	| 1035 ms	| 2.195
+✅ PASS	| 25		| 100%	| 7.8	| 1441 ms	| 3.214
+✅ PASS	| 50		| 100%	| 21.2	| 1043 ms	| 2.354
+✅ PASS	| 75		| 100%	| 23.8	| 1060 ms	| 3.151
+✅ PASS	| 100		| 100%	| 26.6	| 1585 ms	| 3.759
+✅ PASS	| 150		| 100%	| 26.0	| 1002 ms	| 5.763
+✅ PASS	| 200		| 100%	| 37.2	| 1136 ms	| 5.372
+✅ PASS	| 250		| 100%	| 47.8	| 1319 ms	| 5.234
+✅ PASS	| 500		| 100%	| 33.8	| 2321 ms	| 14.784
+✅ PASS	| 750		| 100%	| 58.9	| 3294 ms	| 12.742
+✅ PASS	| 1000		| 100%	| 62.4	| 4685 ms	| 16.023
+========================================================================================
+
+complete config
+========================================================================================
+                               FINAL SUMMARY REPORT                                     
+========================================================================================
+Reqs	| Success	| Rate	| TPS	| Node Latency	| Status
+----------------------------------------------------------------------------------------
+10	| 10		| 100%	| 3.2	| 2034 ms	| ✅ PASS
+15	| 15		| 100%	| 6.9	| 1034 ms	| ✅ PASS
+20	| 20		| 100%	| 8.9	| 1039 ms	| ✅ PASS
+25	| 25		| 100%	| 11.0	| 1039 ms	| ✅ PASS
+50	| 50		| 100%	| 14.4	| 1433 ms	| ✅ PASS
+75	| 75		| 100%	| 27.0	| 968 ms	| ✅ PASS
+100	| 100		| 100%	| 34.0	| 1063 ms	| ✅ PASS
+150	| 150		| 100%	| 34.2	| 968 ms	| ✅ PASS
+200	| 200		| 100%	| 42.1	| 1447 ms	| ✅ PASS
+250	| 250		| 100%	| 43.3	| 1802 ms	| ✅ PASS
+500	| 500		| 100%	| 53.1	| 2361 ms	| ✅ PASS
+740	| 740		| 100%	| 48.3	| 3882 ms	| ✅ PASS
+1000	| 1000		| 100%	| 56.4	| 5018 ms	| ✅ PASS
+1500	| 1500		| 100%	| 49.2	| 8674 ms	| ✅ PASS
+1500	| 1500		| 100%	| 47.0	| 9452 ms	| ✅ PASS
+3000	| 3000		| 100%	| 34.4	| 30509 ms	| ✅ PASS
+========================================================================================
+
+Requests Sent:      	10
+Responses Received: 	10
+Success Rate:       	100.0%
+Total Test Time:    	2.10 sec
+Effective TPS:		4.75
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 75 ms
+Max: 93 ms
+Avg: 85.10 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1010 ms
+Max: 1029 ms
+Avg: 1018.00 ms
+================================================
+
+Requests Sent:      	15
+Responses Received: 	15
+Success Rate:       	100.0%
+Total Test Time:    	2.16 sec
+Effective TPS:		6.93
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 122 ms
+Max: 147 ms
+Avg: 136.33 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1014 ms
+Max: 1040 ms
+Avg: 1025.00 ms
+================================================
+
+Requests Sent:      	20
+Responses Received: 	20
+Success Rate:       	100.0%
+Total Test Time:    	2.17 sec
+Effective TPS:		9.20
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 132 ms
+Max: 158 ms
+Avg: 144.95 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1016 ms
+Max: 1043 ms
+Avg: 1029.10 ms
+================================================
+
+Requests Sent:      	25
+Responses Received: 	25
+Success Rate:       	100.0%
+Total Test Time:    	2.22 sec
+Effective TPS:		11.27
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 165 ms
+Max: 204 ms
+Avg: 187.68 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1013 ms
+Max: 1053 ms
+Avg: 1029.52 ms
+================================================
+
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	2.44 sec
+Effective TPS:		20.47
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 354 ms
+Max: 421 ms
+Avg: 391.24 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 52 ms
+Max: 1063 ms
+Avg: 785.72 ms
+================================================
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	2.52 sec
+Effective TPS:		19.83
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 434 ms
+Max: 503 ms
+Avg: 472.00 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1016 ms
+Max: 1085 ms
+Avg: 1046.82 ms
+================================================
+
+Requests Sent:      	75
+Responses Received: 	75
+Success Rate:       	100.0%
+Total Test Time:    	2.74 sec
+Effective TPS:		27.34
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 636 ms
+Max: 721 ms
+Avg: 684.68 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1019 ms
+Max: 1106 ms
+Avg: 1055.95 ms
+================================================
+
+Requests Sent:      	100
+Responses Received: 	100
+Success Rate:       	100.0%
+Total Test Time:    	3.85 sec
+Effective TPS:		26.01
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 693 ms
+Max: 807 ms
+Avg: 757.39 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1033 ms
+Max: 2050 ms
+Avg: 1249.17 ms
+================================================
+
+Requests Sent:      	150
+Responses Received: 	150
+Success Rate:       	100.0%
+Total Test Time:    	4.33 sec
+Effective TPS:		34.65
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 1120 ms
+Max: 1288 ms
+Avg: 1209.51 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 160 ms
+Max: 2093 ms
+Avg: 1383.99 ms
+================================================
+
+Requests Sent:      	200
+Responses Received: 	200
+Success Rate:       	100.0%
+Total Test Time:    	4.73 sec
+Effective TPS:		42.27
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 1503 ms
+Max: 1683 ms
+Avg: 1598.82 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1078 ms
+Max: 2156 ms
+Avg: 1672.68 ms
+================================================
+
+Requests Sent:      	250
+Responses Received: 	250
+Success Rate:       	100.0%
+Total Test Time:    	4.96 sec
+Effective TPS:		50.45
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 1608 ms
+Max: 1895 ms
+Avg: 1760.64 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 257 ms
+Max: 2160 ms
+Avg: 1446.06 ms
+================================================
+
+
+Requests Sent:      	500
+Responses Received: 	500
+Success Rate:       	100.0%
+Total Test Time:    	9.37 sec
+Effective TPS:		53.36
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 3621 ms
+Max: 4162 ms
+Avg: 3904.25 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 470 ms
+Max: 4206 ms
+Avg: 2004.14 ms
+================================================
+
+Requests Sent:      	750
+Responses Received: 	750
+Success Rate:       	100.0%
+Total Test Time:    	12.60 sec
+Effective TPS:		59.51
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4524 ms
+Max: 5330 ms
+Avg: 4938.41 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 706 ms
+Max: 6279 ms
+Avg: 3166.95 ms
+================================================
+
+Requests Sent:      	1000
+Responses Received: 	1000
+Success Rate:       	100.0%
+Total Test Time:    	15.13 sec
+Effective TPS:		66.09
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 5728 ms
+Max: 6743 ms
+Avg: 6257.02 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 924 ms
+Max: 7535 ms
+Avg: 4306.70 ms
+================================================
+
+Requests Sent:      	1500
+Responses Received: 	1500
+Success Rate:       	100.0%
+Total Test Time:    	23.74 sec
+Effective TPS:		63.18
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 8312 ms
+Max: 9912 ms
+Avg: 9168.44 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1462 ms
+Max: 12874 ms
+Avg: 6974.55 ms
+================================================
+Requests Sent:      	1500
+Responses Received: 	1500
+Success Rate:       	100.0%
+Total Test Time:    	31.11 sec
+Effective TPS:		48.21
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 15657 ms
+Max: 17144 ms
+Avg: 16436.94 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 1396 ms
+Max: 12938 ms
+Avg: 6906.98 ms
+================================================
+
+
+Requests Sent:      	2000
+Responses Received: 	2000
+Success Rate:       	100.0%
+Total Test Time:    	37.20 sec
+Effective TPS:		53.76
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 12296 ms
+Max: 14425 ms
+Avg: 13369.24 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 2025 ms
+Max: 21750 ms
+Avg: 11272.61 ms
+================================================
+Requests Sent:      	2000
+Responses Received: 	2000
+Success Rate:       	100.0%
+Total Test Time:    	37.55 sec
+Effective TPS:		53.26
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 14671 ms
+Max: 16916 ms
+Avg: 15848.63 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 2004 ms
+Max: 19634 ms
+Avg: 10671.69 ms
+================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+WITH AUTO MINE DISABLED ...............................................................................
+MIÉRT LETT KIKAPCSOLVA?
+	mert úgy ki lesz bányászva mindenkétt a tranzakció és nem marad pendig státuszú a node-ban
+	gyorsítani lehet a rendszeren az interval kis értékű számra állításával (pl.: 1s)
+
+Requests Sent:      	10
+Responses Received: 	10
+Success Rate:       	100.0%
+Total Test Time:    	5.09 sec
+Effective TPS:			1.96
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4058 ms
+Max: 4082 ms
+Avg: 4071.90 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 35 ms
+Avg: 20.20 ms
+================================================
+
+Requests Sent:      	15
+Responses Received: 	15
+Success Rate:       	100.0%
+Total Test Time:    	5.12 sec
+Effective TPS:			2.93
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4082 ms
+Max: 4114 ms
+Avg: 4100.00 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 8 ms
+Max: 41 ms
+Avg: 22.07 ms
+================================================
+
+Requests Sent:      	20
+Responses Received: 	20
+Success Rate:       	100.0%
+Total Test Time:    	5.16 sec
+Effective TPS:			3.88
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4109 ms
+Max: 4146 ms
+Avg: 4133.35 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 9 ms
+Max: 47 ms
+Avg: 22.45 ms
+
+Requests Sent:      	25
+Responses Received: 	25
+Success Rate:       	100.0%
+Total Test Time:    	5.16 sec
+Effective TPS:	4.84
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4114 ms
+Max: 4148 ms
+Avg: 4133.84 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 45 ms
+Avg: 24.40 ms
+================================================
+
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	5.36 sec
+Effective TPS:	9.32
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4273 ms
+Max: 4355 ms
+Avg: 4325.98 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 8 ms
+Max: 89 ms
+Avg: 36.06 ms
+================================================
+
+Requests Sent:      	75
+Responses Received: 	75
+Success Rate:       	100.0%
+Total Test Time:    	5.46 sec
+Effective TPS:	13.74
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4367 ms
+Max: 4447 ms
+Avg: 4417.87 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 9 ms
+Max: 89 ms
+Avg: 37.99 ms
+================================================
+
+
+Requests Sent:      	100
+Responses Received: 	100
+Success Rate:       	100.0%
+Total Test Time:    	5.53 sec
+Effective TPS:	18.09
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4401 ms
+Max: 4515 ms
+Avg: 4471.08 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 125 ms
+Avg: 54.32 ms
+================================================
+
+Requests Sent:      	150
+Responses Received: 	150
+Success Rate:       	100.0%
+Total Test Time:    	5.97 sec
+Effective TPS:	25.12
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4794 ms
+Max: 4957 ms
+Avg: 4898.00 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 14 ms
+Max: 176 ms
+Avg: 71.53 ms
+================================================
+
+
+Requests Sent:      	200
+Responses Received: 	200
+Success Rate:       	100.0%
+Total Test Time:    	6.34 sec
+Effective TPS:		31.56
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 5125 ms
+Max: 5316 ms
+Avg: 5241.44 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 17 ms
+Max: 211 ms
+Avg: 92.89 ms
+================================================
+
+Requests Sent:      	250
+Responses Received: 	250
+Success Rate:       	100.0%
+Total Test Time:    	6.59 sec
+Effective TPS:		37.91
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 5329 ms
+Max: 5570 ms
+Avg: 5483.18 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 20 ms
+Max: 264 ms
+Avg: 108.58 ms
+================================================
+
+Requests Sent:      	500
+Responses Received: 	500
+Success Rate:       	100.0%
+Total Test Time:    	9.20 sec
+Effective TPS:		54.35
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 6578 ms
+Max: 7074 ms
+Avg: 6872.63 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 65 ms
+Max: 1620 ms
+Avg: 667.17 ms
+================================================
+
+Requests Sent:      	750
+Responses Received: 	750
+Success Rate:       	100.0%
+Total Test Time:    	12.38 sec
+Effective TPS:			60.58
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 7471 ms
+Max: 8150 ms
+Avg: 7860.91 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 182 ms
+Max: 3310 ms
+Avg: 1375.49 ms
+================================================
+
+Requests Sent:      	1000
+Responses Received: 	1000
+Success Rate:       	100.0%
+Total Test Time:    	15.92 sec
+Effective TPS:		62.81
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 8473 ms
+Max: 9461 ms
+Avg: 9031.28 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 423 ms
+Max: 5676 ms
+Avg: 2378.61 ms
+================================================
+

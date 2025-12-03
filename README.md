@@ -82,10 +82,18 @@ Keystore = 'myChainlinkKeystorePassword123'
 ```
 Because you are testing locally, add ?sslmode=disable to the end of your DATABASE_URL. However you should never do this on a production node!
 
+Additionally you can create an apicredentials file that will store the email and password of yours.
+So when starting the node it won't ask in the terminal.
+```bash
+echo "admin@email.com
+StrongPassword123
+```
+
 4. Start the Chainlink Node by running the Docker image.
 Change the version number in smartcontract/chainlink:2.28.0 with the version of the Docker image that you need to run. You can get that [from here](https://hub.docker.com/r/smartcontract/chainlink/tags).
 ```bash
 cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start
+# add -a /chainlink/apicredentials to the end to use your predefined credentials
 ```
 
 ### Builing From Source
@@ -278,13 +286,27 @@ docker run -d --name cl-postgres --network chainlink-net \
   -e POSTGRES_PASSWORD=mysecretpassword \
   -e POSTGRES_DB=chainlink_db \
   -p 5432:5432 \
-  postgres:18
+  postgres:17
 # if container exists: docker rm -f chainlink
-cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start
+cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
 # open a new termscripts/inal
 npx hardhat run scripts/deploy-and-setup.ts --network localhost
 # copy the Functions Router Address and add it to functions-job.toml
 npx hardhat run scripts/stress-test.ts --network localhost
+```
+
+## Dockerize the system and run
+```bash
+# create the container
+docker-compose up -d --build
+# stopping the container, -v flag delets the persistent storage
+docker-compose down -v
+# easy restart
+docker-compose down -v && docker-compose up -d
+# restart only the chainlink node (keeps database)
+docker-compose restart postgres chainlink
+# chainlink containers last 50 line, (-f "follow", update the logs).
+docker-compose logs --tail=50 -f chainlink
 ```
 
 if you can't see ndoe activity in the EVMs logs diable firewall

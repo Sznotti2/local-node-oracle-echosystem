@@ -1,0 +1,43 @@
+[Feature]
+LogPoller = true
+
+[Log]
+Level = 'warn'
+
+[WebServer]
+AllowOrigins = '*'
+SecureCookies = false
+
+[WebServer.TLS]
+HTTPSPort = 0
+
+[[EVM]]
+ChainID = '31337'
+Enabled = true
+LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+#FinalityDepth = 1
+#LogPollInterval = '1s'
+#MinIncomingConfirmations = 1
+#NoNewHeadsThreshold = '0' # Default '3m'
+
+# Transaction throttling at 500 requests fix
+[EVM.Transactions]
+MaxInFlight = 512 # default 16
+MaxQueued = 5000 # default 250
+ReaperInterval = '10s' # default 1h
+ResendAfterThreshold = '10s' # default 1m
+
+# Calculated gas price is lower than chain min fix
+#[EVM.GasEstimator]
+#Mode = 'FixedPrice' # default: 'BlockHistory'
+#BumpThreshold = 0 # default 3, this saves a few DB queries and calculations.
+#PriceDefault = '1 gwei' # default '100 gwei', automatically set by ChainID, in case of hardhat its 1 gwei, so not required
+
+#[EVM.NodePool]
+#  how many consecutive polls must fail in order to mark a node as unreachable.
+#PollFailureThreshold = 1000 # default 5, Set to zero to disable poll checking.
+
+[[EVM.Nodes]]
+Name = 'Hardhat'
+HTTPURL = 'http://hardhat:8545'
+WSURL = 'ws://hardhat:8545'

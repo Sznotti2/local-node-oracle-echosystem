@@ -1,0 +1,452 @@
+1. [Feature] LogPoller = true
+	Default: false
+
+	Mit csinál: Ez kapcsolja be a Chainlink Node új generációs eseményfigyelő rendszerét (Event Listening System). A régi rendszer (EthLog) egyszerűen feliratkozott a blokklánc eseményekre. A LogPoller ezzel szemben aktívan pásztázza a blokkokat, és minden releváns eseményt (logot) lement a saját Postgres adatbázisába, mielőtt feldolgozná azokat.
+
+	Miért kritikus nálad: A Direct Request modell (amit a Consumer contractod használ) és a modern Chainlink funkciók megkövetelik ezt. Ha ez false lenne, a Node nem venné észre a RequestCreated eseményeket, így el sem indulna a feldolgozás.
+
+	Technikai háttér: A LogPoller biztosítja a "Reorg Protection"-t (lánc-reorganizáció elleni védelmet). Ha a blokkláncon visszarendeződés történik, a LogPoller az adatbázisban is képes visszagörgetni az állapotot, így a Node nem hajt végre érvénytelen kéréseket.
+
+2. [EVM.Transactions] MaxInFlight = 200
+	Default: 16
+
+	Mit csinál: Ez a paraméter határozza meg a Párhuzamosítási Határt (Concurrency Limit). Azt adja meg, hogy hány olyan tranzakciója lehet a node-nak egyszerre a hálózaton (a mempoolban), amelyeket már elküldött (broadcasted), de még nem kerültek be véglegesen egy blokkba (unconfirmed).
+
+	A stressz tesztben: Az alapértelmezett 16 egy szigorú "fojtás" (throttle). Amikor te 100 kérést küldtél másodpercenként, a Node a 16. után megállt, és várta, hogy azok beérjenek. Ez okozta a lassú throughputot.
+
+	A módosítás hatása: A 200-ra emeléssel (vagy 2000-re a nagy tesztnél) lebontottad ezt a mesterséges korlátot ("Vertical Scaling"), lehetővé téve a Node számára, hogy kihasználja a Hardhat gyors blokkidejét.
+
+3. [EVM.Transactions] MaxQueued = 5000
+	Default: 250
+
+	Mit csinál: Ez a Belső Puffer Mérete. Ha a fenti MaxInFlight betelik (pl. mind a 200 slot foglalt), az új tranzakciók ebbe a várólistába (Queue) kerülnek. Ez védi a node-ot a memóriatúlcsordulástól.
+
+	A stressz tesztben: Amikor "burst" tesztet futtatsz (pl. 3000 kérés egyszerre), és a MaxInFlight "csak" 200, akkor 2800 kérésnek várakoznia kell. Ha a MaxQueued csak 250 lenne, a Node a 450. kérés után elkezdené eldobálni (drop) a feladatokat hibaüzenettel.
+
+	A módosítás hatása: Az 5000-re emelés biztosítja, hogy hirtelen terheléscsúcsok (spikes) esetén se vesszenek el tranzakciók, hanem biztonságosan várakozzanak a sorukra.
+
+4. [EVM.Transactions] ReaperInterval = '1s'
+	Default: 1h (1 óra)
+
+	Mit csinál: Ez a "Takarító" (Garbage Collector) gyakorisága a tranzakciókezelőben. A Reaper feladata, hogy átnézze az adatbázist, és a már véglegesített (finalized) tranzakciókat kivegye az aktív listából, felszabadítva a helyet a MaxInFlight slotokban.
+
+	Miért kellett módosítani? Alapértelmezésben (1 óra) a Chainlink úgy van beállítva, hogy spóroljon az adatbázis erőforrásokkal. De a te tesztkörnyezetedben a blokkidő 100ms-500ms. Ha a Reaper csak óránként futna, a MaxInFlight slotok pillanatok alatt "betelnének" már kész tranzakciókkal, amiket a node még nem takarított ki.
+
+	A módosítás hatása: Az 1s beállítás biztosítja, hogy a MaxInFlight slotok azonnal felszabaduljanak, amint egy tranzakció bekerült a blokkba, így a Node folyamatosan, megállás nélkül tud új kéréseket fogadni.
+
+5. [JobPipeline] MaxSuccessfulRuns = 50
+	Default: 10000
+
+	Mit csinál: Ez az Adatbázis Karbantartási (Pruning) Limit. Azt mondja meg, hogy hány befejezett feladat (Job Run) részletes adatait (inputok, outputok, időbélyegek) őrizze meg az adatbázisban.
+
+	A probléma forrása (Database Locking): Az alapértelmezett 10 000-es értéknél a Node ritkán, de hatalmas adagokban töröl. Amikor eléred a 10 000-et, a Node megpróbál egyszerre több száz/ezer sort törölni. A Postgres adatbázis ilyenkor "zárolja" (Lock) a táblát az írás elől, amíg a törlés tart. Ez okozta azt a jelenséget, hogy a Node időnként percekre "lefagyott".
+
+	A módosítás hatása: Az 50-re csökkentés "mikro-takarításokat" eredményez. Minden egyes új futás után töröl egy régit. Ez a művelet milliszekundumokig tart, nem okoz adatbázis zárolást, így a rendszer teljesítménye egyenletes (smooth) marad hosszú távú terhelés alatt is.
+
+
+[WARN]  Job of this type will not be supported in chainlink v3 job/orm.go:175                   logger=JobORM type=directrequest version=2.29.0@10bd946 
+
+
+Requests Sent:      	10
+Responses Received: 	10
+Success Rate:       	100.0%
+Total Test Time:    	5.10 sec
+Effective TPS:			1.96
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4064 ms
+Max: 4089 ms
+Avg: 4079.00 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 36 ms
+Avg: 20.10 ms
+================================================
+Requests Sent:      	10
+Responses Received: 	10
+Success Rate:       	100.0%
+Total Test Time:    	5.10 sec
+Effective TPS:			1.96
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4070 ms
+Max: 4092 ms
+Avg: 4082.40 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 34 ms
+Avg: 20.80 ms
+================================================
+
+
+Requests Sent:      	15
+Responses Received: 	15
+Success Rate:       	100.0%
+Total Test Time:    	5.14 sec
+Effective TPS:			2.92
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4094 ms
+Max: 4132 ms
+Avg: 4114.93 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 50 ms
+Avg: 28.33 ms
+================================================
+Requests Sent:      	15
+Responses Received: 	15
+Success Rate:       	100.0%
+Total Test Time:    	5.13 sec
+Effective TPS:			2.92
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4080 ms
+Max: 4119 ms
+Avg: 4102.20 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 51 ms
+Avg: 27.47 ms
+================================================
+
+Requests Sent:      	20
+Responses Received: 	20
+Success Rate:       	100.0%
+Total Test Time:    	6.16 sec
+Effective TPS:			3.24
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4094 ms
+Max: 4145 ms
+Avg: 4124.40 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 12 ms
+Max: 1056 ms
+Avg: 232.40 ms
+================================================
+Requests Sent:      	20
+Responses Received: 	20
+Success Rate:       	100.0%
+Total Test Time:    	6.16 sec
+Effective TPS:			3.25
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4091 ms
+Max: 4138 ms
+Avg: 4118.35 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 1028 ms
+Avg: 231.50 ms
+================================================
+
+[WARN]  Transaction throttling; 16 transactions in-flight and 0 unstarted transactions pending (maximum number of in-flight transactions is 16 per key). WARNING: If this happens a lot, you may need to increase Transactions.MaxInFlight to boost your node's transaction throughput, however you do this at your own risk. You MUST first ensure your node is configured not to ever evict local transactions that exceed this number otherwise the node can get permanently stuck. See the performance guide for more details: https://docs.chain.link/docs/evm-performance-configuration/ txmgr/broadcaster.go:366         logger=EVM.31337.Txm.Broadcaster maxInFlightTransactions=16 nUnconfirmed=16 nUnstarted=0 version=2.29.0@10bd946 
+
+
+Requests Sent:      	25
+Responses Received: 	25
+Success Rate:       	100.0%
+Total Test Time:    	6.20 sec
+Effective TPS:			4.03
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4122 ms
+Max: 4183 ms
+Avg: 4160.04 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 12 ms
+Max: 1078 ms
+Avg: 393.92 ms
+================================================
+Requests Sent:      	25
+Responses Received: 	25
+Success Rate:       	100.0%
+Total Test Time:    	6.21 sec
+Effective TPS:			4.03
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4124 ms
+Max: 4182 ms
+Avg: 4158.40 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 13 ms
+Max: 1080 ms
+Avg: 400.80 ms
+================================================
+[WARN]  Transaction throttling; 16 transactions in-flight and 0 unstarted transactions pending (maximum number of in-flight transactions is 16 per key). WARNING: If this happens a lot, you may need to increase Transactions.MaxInFlight to boost your node's transaction throughput, however you do this at your own risk. You MUST first ensure your node is configured not to ever evict local transactions that exceed this number otherwise the node can get permanently stuck. See the performance guide for more details: https://docs.chain.link/docs/evm-performance-configuration/ txmgr/broadcaster.go:366         logger=EVM.31337.Txm.Broadcaster maxInFlightTransactions=16 nUnconfirmed=16 nUnstarted=0 version=2.29.0@10bd946
+
+
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	7.29 sec
+Effective TPS:			6.86
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 258 ms
+Max: 4257 ms
+Avg: 3681.04 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 7 ms
+Max: 5017 ms
+Avg: 987.26 ms
+================================================
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	8.35 sec
+Effective TPS:			5.99
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4205 ms
+Max: 4304 ms
+Avg: 4266.30 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 6 ms
+Max: 3073 ms
+Avg: 1136.10 ms
+================================================
+same warning x3
+
+
+after this chainlink node is unresponsive, can't receive more transactions
+Amikor te elküldtél 50 kérést gyors egymásutánban ("burst"):
+	Az első 16 azonnal kiment.
+	A maradék 34 bekerült a belső várólistára (MaxQueued).
+	Ha a Hardhat (blokklánc) és a Node között bármilyen kis késés (latency) volt, a Node nem kapta meg időben a nyugtákat.
+	A sor megtelt, a Node "lezárt" (Throttling), és nem fogadott új kéréseket a Consumer contracttól (ezért állt le a teszted).
+
+önmagában, ha indítás után lefuttatjuk 75 requesttel:
+Requests Sent:      	75
+Responses Received: 	75
+Success Rate:       	100.0%
+Total Test Time:    	9.58 sec
+Effective TPS:			7.83
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4410 ms
+Max: 4521 ms
+Avg: 4482.47 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 14 ms
+Max: 4115 ms
+Avg: 1932.11 ms
+================================================
+4x Transaction throttling warning
+
+changed the config: added
+[EVM.Transactions]
+MaxInFlight = 2000 # default 16
+
+Requests Sent:      	10
+Responses Received: 	10
+Success Rate:       	100.0%
+Total Test Time:    	5.11 sec
+Effective TPS:			1.96
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4071 ms
+Max: 4095 ms
+Avg: 4084.80 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 9 ms
+Max: 34 ms
+Avg: 19.40 ms
+================================================
+
+
+Requests Sent:      	15
+Responses Received: 	15
+Success Rate:       	100.0%
+Total Test Time:    	5.14 sec
+Effective TPS:			2.92
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4088 ms
+Max: 4126 ms
+Avg: 4109.93 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 10 ms
+Max: 49 ms
+Avg: 26.60 ms
+================================================
+
+Requests Sent:      	20
+Responses Received: 	20
+Success Rate:       	100.0%
+Total Test Time:    	5.16 sec
+Effective TPS:			3.87
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4102 ms
+Max: 4150 ms
+Avg: 4130.95 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 60 ms
+Avg: 29.85 ms
+================================================
+
+Requests Sent:      	25
+Responses Received: 	25
+Success Rate:       	100.0%
+Total Test Time:    	5.21 sec
+Effective TPS:			4.80
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4130 ms
+Max: 4194 ms
+Avg: 4170.80 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 9 ms
+Max: 74 ms
+Avg: 32.48 ms
+================================================
+
+Requests Sent:      	50
+Responses Received: 	50
+Success Rate:       	100.0%
+Total Test Time:    	5.37 sec
+Effective TPS:			9.32
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4264 ms
+Max: 4354 ms
+Avg: 4319.52 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 101 ms
+Avg: 45.52 ms
+================================================
+
+Requests Sent:      	75
+Responses Received: 	75
+Success Rate:       	100.0%
+Total Test Time:    	6.56 sec
+Effective TPS:			11.43
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4427 ms
+Max: 4536 ms
+Avg: 4501.85 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 7 ms
+Max: 1132 ms
+Avg: 487.63 ms
+================================================
+
+after 250 transactions (usually here) the node cannot process more transactions, so we need  to add another config
+[EVM.Transactions]
+MaxInFlight = 200  # default 16
+MaxQueued = 5000  # default 250
+ReaperInterval = '1s' # default 1h
+
+
+Requests Sent:      	100
+Responses Received: 	100
+Success Rate:       	100.0%
+Total Test Time:    	6.66 sec
+Effective TPS:			15.01
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4511 ms
+Max: 4636 ms
+Avg: 4588.41 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 9 ms
+Max: 1144 ms
+Avg: 574.05 ms
+================================================
+
+Requests Sent:      	150
+Responses Received: 	150
+Success Rate:       	100.0%
+Total Test Time:    	6.96 sec
+Effective TPS:			21.57
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4744 ms
+Max: 4923 ms
+Avg: 4851.37 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 11 ms
+Max: 1202 ms
+Avg: 421.84 ms
+================================================
+
+Requests Sent:      	200
+Responses Received: 	200
+Success Rate:       	100.0%
+Total Test Time:    	8.26 sec
+Effective TPS:			24.22
+
+--- PHASE 1: BLOCKCHAIN WRITE (Hardhat Network) ---
+(Time from tx.send() to RequestCreated)
+Min: 4977 ms
+Max: 5211 ms
+Avg: 5126.52 ms
+
+--- PHASE 2: ORACLE NODE PROCESSING (Chainlink) ---
+(Time from RequestCreated to RequestFulfilled)
+Min: 12 ms
+Max: 2271 ms
+Avg: 1337.80 ms
+================================================

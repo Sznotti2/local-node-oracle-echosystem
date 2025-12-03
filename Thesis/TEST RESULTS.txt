@@ -1,0 +1,99 @@
+TEST RESULTS:
+10 Requests:
+	=== Test Results ===
+	Total Test Time: 0.61s
+	Successful: 10/10
+	Timed Out: 0
+	Success Rate: 100.00%
+
+	Response Times:
+	  Average: 606.10ms
+	  Min: 604ms
+	  Max: 609ms
+
+	Gas Usage:
+	  Total: 0.001710753824855888 ETH
+	  Average per request: 0.000171075382485588 ETH
+
+	=== All Stress Tests Complete ===
+
+50 Requests:
+	=== Test Results ===
+	Total Test Time: 1.62s
+	Successful: 50/50
+	Timed Out: 0
+	Success Rate: 100.00%
+
+	Response Times:
+	  Average: 1588.88ms
+	  Min: 1548ms
+	  Max: 1607ms
+
+	Gas Usage:
+	  Total: 0.008133607456696236 ETH
+	  Average per request: 0.000162672149133924 ETH
+
+	=== All Stress Tests Complete ===
+
+100 Requests:
+	=== Test Results ===
+	Total Test Time: 2.66s
+	Successful: 100/100
+	Timed Out: 0
+	Success Rate: 100.00%
+
+	Response Times:
+	  Average: 2037.60ms
+	  Min: 1569ms
+	  Max: 2653ms
+
+	Gas Usage:
+	  Total: 0.016266424113864968 ETH
+	  Average per request: 0.000162664241138649 ETH
+
+	=== All Stress Tests Complete ===
+
+
+500 Requests:
+	=== Test Results ===
+	Total Test Time: 6.18s
+	Successful: 500/500
+	Timed Out: 0
+	Success Rate: 100.00%
+
+	Response Times:
+	  Average: 6032.37ms
+	  Min: 5884ms
+	  Max: 6088ms
+
+	Gas Usage:
+	  Total: 0.081332768569329376 ETH
+	  Average per request: 0.000162665537138658 ETH
+
+	=== All Stress Tests Complete ===
+
+
+1000 Requests:
+	=== Test Results ===
+	Total Test Time: 20.54s
+	Successful: 0/1000
+	Timed Out: 1000
+	Success Rate: 0.00%
+
+	Response Times:
+	  Average: 20118.57ms
+	  Min: Infinityms
+	  Max: 0ms
+
+	Gas Usage:
+	  Total: 0.162665873138661104 ETH
+	  Average per request: 0.000162665873138661 ETH
+
+	=== All Stress Tests Complete ===
+
+	Errors:
+    	while creating transaction: Txm#CreateTransaction: cannot create transaction; too many unstarted transactions in the queue (250/250). WARNING: Hitting EVM.Transactions.MaxQueued is a sanity limit and should never happen under normal operation. Unless you are operating with very high throughput, this error is unlikely to be a problem with your Chainlink node configuration, and instead more likely to be caused by a problem with your eth node's connectivity. Check your eth node: it may not be broadcasting transactions to the network, or it might be overloaded and evicting Chainlink's transactions from its mempool. It is recommended to run Chainlink with multiple primary and sendonly nodes for redundancy and to ensure fast and reliable transaction propagation. Increasing EVM.Transactions.MaxQueued will allow Chainlink to buffer more unsent transactions, but you should only do this if you need very high burst transmission rates. If you don't need very high burst throughput, increasing this limit is not the correct action to take here and will probably make things worse. See the performance guide for more details: https://docs.chain.link/docs/evm-performance-configuration/: task run failed
+
+After this no more request were possible
+A total of 660 request were recived by the node from which ~400 was succeccful (result was sent back although showed suspended status)
+179 has successful status

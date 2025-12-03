@@ -46,23 +46,19 @@ module.exports = {
     },
     networks: {
         hardhat: {
-            hardfork: "merge",
+            // Ez definiálja, hogyan viselkedjen a "npx hardhat node" parancs.(server)
+            // ITT NEM LEHET URL!
             chainId: 31337,
-			mining: {
-				auto: true,
-				interval: 5000 // Mine a block every 5 seconds
-			},
         },
         localhost: {
-			url: "http://127.0.0.1:8545",
+            // Ezt használja a deploy script és a setup container, (kliens)
+            // hogy csatlakozzon a fenti node-hoz.
             chainId: 31337,
-			mining: {
-				auto: true,
-				interval: 5000 // Mine a block every 5 seconds
-			},
+			url: process.env.HARDHAT_URL || "http://127.0.0.1:8545",
         },
     },
-    defaultNetwork: "hardhat",
+    defaultNetwork: "localhost",
+    /*
     gasReporter: {
         enabled: true,
         currency: "USD",
@@ -90,4 +86,6 @@ module.exports = {
     mocha: {
         timeout: 300000, // 300 seconds max for running tests
     },
+    */
+
 }

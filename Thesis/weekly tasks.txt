@@ -1,0 +1,70 @@
+user interface (optional)
+chapter 1
+
+
+doing:
+  chapter 2
+    summerize/showcase previous works at least 10
+    difference between my and others works
+  cd/ci make it work
+  update figures to match current architecture state
+
+finish up (last touches):
+  chapter 3
+
+
+done:
+  insurance logic to CC
+  modify the api (optional)
+  perfom everithing in virtualbox!
+  fix readme!
+  write down every problem and solution
+  stress testing with different configs!
+  batch testing
+  install script
+  change config and measure performance of each change
+  chapter 4
+
+
+
+
+
+problems:
+  - firewall needs to be disabled for docker to communicate with the EVM and API <-- solved
+  - too many unstarted transactions in the queue error (current limit is 250) <-- solved
+  - after a certain amount of time the node does not respond to anything <-- solved
+  Logs:
+    [CRIT]  RPC endpoint detected out of sync; but cannot disable this connection because there are no other RPC endpoints, or all other RPC endpoints are dead. Chainlink is now operating in a degraded state and urgent action is required to resolve the issue multinode@v0.0.0-20250729142306-508e798f6a5d/node_lifecycle.go:170 chainID=31337 logger=EVM.31337.Node.Lifecycle.Alive noNewHeadsTimeoutThreshold=180 node=(primary)Hardhat:ws://host.docker.internal:8545:http://host.docker.internal:8545 nodeName=Hardhat nodeOrder=100 nodeTier=primary pollFailureThreshold=5 pollInterval=10 stacktrace=github.com/smartcontractkit/chainlink-framework/multinode.(*node[...]).aliveLoop
+        /go/pkg/mod/github.com/smartcontractkit/chainlink-framework/multinode@v0.0.0-20250729142306-508e798f6a5d/node_lifecycle.go:170 version=2.29.0@10bd946 
+    [ERROR] RPC endpoint detected out of sync; no new heads received for 3m0s (last head received was 116) multinode@v0.0.0-20250729142306-508e798f6a5d/node_lifecycle.go:165 chainID=31337 latestReceivedBlockNumber=116 logger=EVM.31337.Node.Lifecycle.Alive noNewHeadsTimeoutThreshold=180 node=(primary)Hardhat:ws://host.docker.internal:8545:http://host.docker.internal:8545 nodeName=Hardhat nodeOrder=100 nodeState=Alive nodeTier=primary pollFailureThreshold=5 pollInterval=10 stacktrace=github.com/smartcontractkit/chainlink-framework/multinode.(*node[...]).aliveLoop
+        /go/pkg/mod/github.com/smartcontractkit/chainlink-framework/multinode@v0.0.0-20250729142306-508e798f6a5d/node_lifecycle.go:165 version=2.29.0@10bd946
+  Solution:
+    - restart node (half baked)
+    - proxy?
+
+
+  [INFO]  Oracle request received                            directrequest/delegate.go:310    callbackAddr=0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9 callbackFunctionId=55bc57c1 cancelExpiration=1762952965 contract=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 data=6661706955726c7829687474703a2f2f3132372e302e302e313a353030302f776561746865723f636974793d5379646e657964706174686b74656d7065726174757265 dataVersion=1 externalJobID=febe0466-d881-420e-936c-fe7a978d8168 jobID=1 jobName=Get > Uint256 logger=DirectRequest.febe0466-d881-420e-936c-fe7a978d8168.Listener payment=100000000000000000 requestId=06fadfe6227068a8b4f90dc520ac58de20e95b80b5868a56aefdfaefc2a48d4c requester=0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9 specId=6665626530343636643838313432306539333663666537613937386438313638 version=2.29.0@10bd946 
+  [INFO]  Pipeline runs will be pruned above per-job limit of MaxSuccessfulRuns=10000 pipeline/orm.go:132              logger=PipelineORM version=2.29.0@10bd946
+
+
+
+
+
+
+limitations of system:
+
+
+
+
+
+
+
+
+todo:
+Network Failure Simulation: Test what happens when oracle doesn't respond
+Block Gas Limit Tests: Find maximum policies that can be evaluated in one transaction
+Memory Tests: Test with very long location strings or edge case inputs
+Concurrent Cancellations: Multiple users canceling at the same time
+Oracle Response Time: Measure latency under load
+LINK Token Exhaustion: What happens when consumer runs out of LINK --> script trows error
+
