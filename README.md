@@ -1,367 +1,178 @@
-# Complete Guide: Running a Local Chainlink Node, LinkToken and oracle in Hardhat on Linux
+# Complete Guide: Running a Local Oracle Network
+**Project Context**: This repository contains the practical implementation and measurement environment for my BSc Thesis on "Blockchain-based Insurance system using Smart Contracts and Oracles".
+
+This project establishes a fully containerized, local blockchain ecosystem designed to stress-test Chainlink Oracle Nodes. Unlike standard testnet setups, this environment eliminates external network latency, allowing for precise analysis of the middleware's "breaking points," throughput limits (TPS), and internal bottlenecks (e.g., database locking, RPC synchronization).
+
+
+If you encounter any error or unusual behaviour, visit the [troubleshooting section](#troubleshooting), 
+as it has solutions to common problems.
 
 ## Table of Contents
 
-- [Running a Chainlink Node](#running-a-chainlink-node)
-  - [Using Docker](#using-docker)
-  - [Builing From Source](#builing-from-source)
-    - [Create Chainlink Configuration](#create-chainlink-configuration)
-    - [Run Chainlink Node](#run-chainlink-node)
-  - [Node Web GUI](#node-web-gui)
-- [Running everithing together (built from source)](#running-everithing-together-from-source)
-- [Running everithing together (docker)](#running-everithing-together-docker)
-- [Troubleshooting](#troubleshooting)
+  - [Table of Contents](#table-of-contents)
+  - [Core Components](#core-components)
+  - [Prerequisites](#prerequisites)
+  - [Install](#install)
+  - [Setup](#setup)
+  - [Running Experiments](#running-experiments)
+    - [Request Tracing (Demo)](#request-tracing-demo)
+    - [System Diagnostics](#system-diagnostics)
+    - [Test the Network](#test-the-network)
+      - [Basic Stress Test](#basic-stress-test)
+      - [Step-load Stress Test](#step-load-stress-test)
+    - [Metrics gathered:](#metrics-gathered)
+    - [Useful Commands \& Monitoring](#useful-commands--monitoring)
+  - [Configuration \& Optimization](#configuration--optimization)
+  - [Project Structure](#project-structure)
+  - [Troubleshooting](#troubleshooting)
 
-## Running a Chainlink Node
+## Core Components
+The system operates as a microservices cluster orchestrated via Docker Compose:
+ - **Hardhat Node (v2):** Local Ethereum blockchain running in `auto-mining` mode for zero-latency block production to test the oracle's reaction speed.
+ - **Chainlink Node (v2.29.0):** The oracle middleware, heavily tuned for high throughput. (see [Documentation](https://docs.chain.link/chainlink-nodes/v1/node-config))
+ - **PostgreSQL:** Stores node state, job runs, and keystore. Tuned for high concurrency.(`max_connections=300`)
+ - **Local API:** A lightweight Express.js server simulating a weather data provider to eliminate internet latency variability.
+ - **Automation Scripts:** You'll find scripts and enviorment files that automate the *"boring stuff"*: deploys contracts, funds the node wallet, runs tests.
 
-This tutorial will guide you through setting up and running a local EVM and connect it to a Chainlink node on Ubuntu/Debian Linux systems.
+## Prerequisites
+- **Docker Desktop** (or Docker Engine + Compose Plugin)
+- **Node.js v20** (use with nvm if you haven't already)
+- **npm** or *yarn*
 
-### Using Docker
 
-#### Create a bridge
-```bash
-docker network create chainlink-net
-```
-
-#### Run PostgreSQL in a Docker container. You can replace mysecretpassword with your own password
-```bash
-docker run -d --name cl-postgres --network chainlink-net \
-  -e POSTGRES_USER=chainlink \
-  -e POSTGRES_PASSWORD=mysecretpassword \
-  -e POSTGRES_DB=chainlink_db \
-  -p 5432:5432 \
-  postgres:18 # Use a recent, supported version
-
-# Confirm that the container is running. Note the 5432 port is published 0.0.0.0:5432->5432/tcp and therefore accessible outside of Docker.
-docker ps -a -f name=cl-postgres
-# the output shpuld look like this
-CONTAINER ID   IMAGE      COMMAND                  CREATED         STATUS         PORTS                    NAMES
-dc08cfad2a16   postgres   "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes   0.0.0.0:5432->5432/tcp   cl-postgres
-```
-
-##### Configure your node
-
-1. Create a local directory to hold the Chainlink data:
-```bash
-mkdir ~/.chainlink-local
-```
-
-2. Run the following as a command to create a config.toml file and populate with variables specific to the network you're running on
+## Install
+1. Clone and Install Dependencies
 
 ```bash
-echo "[Log]
-Level = 'info'
-
-[WebServer]
-AllowOrigins = '*'
-SecureCookies = false
-
-[WebServer.TLS]
-HTTPSPort = 0
-
-[[EVM]]
-ChainID = '31337'
-Enabled = true
-
-[[EVM.Nodes]]
-Name = 'Hardhat'
-HTTPURL = 'http://host.docker.internal:8545'
-WSURL = 'ws://host.docker.internal:8545'
-" > ~/.chainlink-local/config.toml
+git clone https://github.com/Sznotti2/local-node-oracle-echosystem.git
+cd local-node-oracle-echosystem
+cp .env.example .env # create .env file
+npm i
+docker-compose up -d --build # it will take some time
 ```
 
-3. Create a secrets.toml file with a keystore password and the URL to your database. Update the value for mysecretpassword to the chosen password in Run PostgreSQL.
+The docker-compose command will build and start 4 containers in detached mode using the `-d` flag.
+
+## Setup
+After installation finishes:
+1. log in to the node's UI at http://localhost:6688
+- *API Email:* `admin@email.com`
+- *API Password:* `StrongPassword123`
+  
+(credentials are stored in chainlink-config/apicredentials)
+
+2. copy the Node's Wallet Address and paste it in the *.env* file (NODE_ADDRESS=...)
+3. copy the code from chainlink-config/job.toml and go back to the UI, 
+4. click on "Add JOB" button
+5. paste the code in the textarea
+6. click on "Create JOB"
+
+in the terminal run
+```bash
+npm run setup
+```
+
+**The steps in [Setup](#setup) needs to be done every time the network is restarted!**
+
+## Running Experiments
+This project includes specialized scripts to trace transactions and perform load testing. All scripts should be run from your host machine.
+
+### Request Tracing (Demo)
+Follows the lifecycle of a single Chainlink request across the network (Consumer -> LinkToken -> Operator -> Node -> Operator -> Consumer). Useful for verifying system health.
+```bash
+npm run demo
+```
+
+### System Diagnostics
+Checks the ETH and LINK balances of all components.
+```bash
+npm run balance
+```
+
+### Test the Network
+
+**Be careful when using test scripts as they can easily freeze your machine with request counts exceeding 1000!**
+
+It is advised to run tests with performance monitoring software as it *will* push both your system and this network to its *limits*,
+
+#### Basic Stress Test
+Simple test script that will prompt you how many requests you want to send. 
+```bash
+npm run stress-test
+```
+
+#### Step-load Stress Test
+This script incrementally increases the load (e.g., 10 -> 50 -> 100 -> 1000 requests) to find the exact point where the system fails or latency becomes unacceptable.
+```bash
+npm run step-test
+```
+
+### Metrics gathered:
+- Throughput: Effective Transactions Per Second.
+- Node Latency: Time taken by the node to process the event (excluding block time)
+- Total experiment time: from the first sent request to the last received
+
+### Useful Commands & Monitoring
 
 ```bash
-echo "[Database]
-URL = 'postgresql://chainlink:mysecretpassword@cl-postgres:5432/chainlink_db?sslmode=disable'
-
-[Password]
-Keystore = 'myChainlinkKeystorePassword123'
-" > ~/.chainlink-local/secrets.toml
-```
-Because you are testing locally, add ?sslmode=disable to the end of your DATABASE_URL. However you should never do this on a production node!
-
-Additionally you can create an apicredentials file that will store the email and password of yours.
-So when starting the node it won't ask in the terminal.
-```bash
-echo "admin@email.com
-StrongPassword123
+docker-compose up -d # runs all containers in detached mode
+docker-compose down -v # stops all containers and deletes databse
+docker-compose restart <chainlink | api | hardhat | cl-postgres> # restarts container
+docker-compose logs -f <chainlink | api | hardhat | cl-postgres> # prints live logs of specified container
+docker-compose logs -f --tail=50 <chainlink | api | hardhat | cl-postgres> # last 50 Hardhat Logs
+docker-compose ps # shows container status
 ```
 
-4. Start the Chainlink Node by running the Docker image.
-Change the version number in smartcontract/chainlink:2.28.0 with the version of the Docker image that you need to run. You can get that [from here](https://hub.docker.com/r/smartcontract/chainlink/tags).
-```bash
-cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start
-# add -a /chainlink/apicredentials to the end to use your predefined credentials
-```
+## Configuration & Optimization
 
-### Builing From Source
+A key part of this thesis work was tuning the Chainlink Node to survive high-load simulation. The default "production" settings are too conservative for auto-mining networks.
 
-#### Update System Packages
-
-```bash
-sudo apt update && sudo apt upgrade -y && sudo apt autoremove
-```
-
-#### Install PostgreSQL Database
-
-##### Install PostgreSQL
-```bash
-sudo apt install postgresql postgresql-contrib -y
-```
-
-##### Start and enable PostgreSQL service
-```bash
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-```
-
-##### Configure PostgreSQL
-```bash
-# Switch to postgres user
-sudo -u postgres psql
-
-# Set password for postgres user (use a strong password)
-\password postgres
-# Enter password: password123456789
-# Confirm password: password123456789
-
-# Create database for Chainlink
-CREATE DATABASE "chainlink-local";
-
-# Exit PostgreSQL
-\q
-```
-
-##### Test database connection
-```bash
-psql -h localhost -U postgres -d chainlink-local
-# Enter password when prompted
-# Type \q to exit
-```
-
-#### Install Go (Required for Chainlink)
-
-##### Download and install Go
-```bash
-# Remove any existing Go installation
-sudo rm -rf /usr/local/go
-
-# Download Go (check for latest version at https://golang.org/dl/)
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-
-# Extract to /usr/local
-sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
-
-# Add Go to PATH
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-echo 'export GOPATH=$HOME/go' >> ~/.bashrc
-echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
-
-# Reload bash profile
-source ~/.bashrc
-
-# Verify installation
-go version
-```
-
-#### Clone Chainlink repository
-```bash
-git clone https://github.com/smartcontractkit/chainlink.git
-cd chainlink
-```
-
-#### Build Chainlink
-```bash
-# This may take 10-15 minutes
-make install
-```
-
-#### Verify Chainlink installation
-```bash
-chainlink --version
-```
-
-#### Create Chainlink Configuration
-
-##### Create configuration directory
-```bash
-mkdir -p ~/.chainlink-local
-cd ~/.chainlink-local
-```
-
-##### Create config.toml file
-```bash
-cat > config.toml << 'EOF'
-[Log]
-Level = 'info'
-
-[WebServer]
-AllowOrigins = '*'
-SecureCookies = false
-
-[WebServer.TLS]
-HTTPSPort = 0
-
-[[EVM]]
-ChainID = '31337'
-
-[[EVM.Nodes]]
-Name = 'local hardhat'
-WSURL = 'ws://localhost:8545'
-HTTPURL = 'http://localhost:8545'
-EOF
-```
-
-##### Create secrets.toml file
-```bash
-cat > secrets.toml << 'EOF'
-[Password]
-Keystore = 'password123456789'
-
-[Database]
-URL = 'postgresql://postgres:password123456789@127.0.0.1:5432/chainlink-local?sslmode=disable'
-EOF
-```
-
-**Important:** Replace `password123456789` with the actual PostgreSQL password you set.
-
-#### Run Chainlink Node
-
-##### Start the node
-```bash
-cd ~/.chainlink-local
-chainlink -c config.toml -s secrets.toml local n
-```
-You can access the node gui now.
-
-### Node Web GUI
-
-#### Set up API credentials
-Starting the node for the first time you will be prompted in the console to provide the API credentials:
-- **API Email:** `admin@email.com` (or any email you prefer)
-- **API Password:** `StrongPassword123` (choose a secure password)
-
-#### Access the Web Interface
-Once the node is running, you can access the web interface at:
-```
-http://localhost:6688
-```
-Log in with your API credentials
-
-1. You should see the Chainlink dashboard
-2. Copy the Node Address to the .env file
-3. Create a new JOB, you can find an example in the the root directory
-4. Copy the External Job ID and paste it into the .env file without dashes "-"
+| Parameter                  | Default | Optimized           | Description / Function                                                                                                      |
+| -------------------------- | ------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `LogPoller`                | false   | true                | Enables the V2 event polling mechanism required for the Direct Request model to detect on-chain events                      |
+| `MaxIdleConns`             | 10      | 20                  | Sets the maximum number of idle PostgreSQL connections kept open in the connection pool for immediate reuse                 |
+| `MaxOpenConns`             | 100     | 250                 | Defines the hard limit on the total number of concurrent connections allowed between the node and the PostgreSQL database.  |
+| `MinIncomingConfirmations` | 3       | 1                   | Specifies the number of blocks the node must wait after an event is emitted before triggering a job run (to prevent reorgs) |
+| `LogPollInterval`          | 15s     | 1s                  | Controls the frequency at which the node queries the RPC endpoint for new event logs                                        |
+| `FinalityDepth`            | 50      | 1                   | Determines the number of blocks after which the node considers a transaction or log to be immutable (final)                 |
+| `NoNewHeadsThreshold`      | 3m      | 0                   | Defines the timeout duration for receiving new block headers before declaring the upstream RPC endpoint unresponsive        |
+| `HTTPURL`                  | -       | http://hardhat:8545 | Specifies the HTTP(S) endpoint address. Used to connect to the internal Docker network alias of the Hardhat container       |
+| `MaxInFlight`              | 16      | 512                 | Limits the maximum number of unconfirmed transactions allowed in the mempool simultaneously per key                         |
+| `MaxQueued`                | 250     | 5000                | Sets the capacity of the internal buffer for transactions waiting to be broadcasted when the `MaxInFlight` limit is reached |
+| `ReaperInterval`           | 1h      | 10s                 | Determines the frequency at which the transaction manager checks for confirmed transactions to free up `MaxInFlight` slots  |
+| `ResendAfterThreshold`     | 1m      | 10s                 | Specifies the duration the node waits for a transaction confirmation before attempting to re-broadcast (bump) it            |
+| `MaxSuccessfulRuns`        | 10000   | 50                  | Sets the retention limit for storing successful pipeline run data in the database before auto-pruning (deletion) occurs     |
 
 
-## Running everithing together (from source)
-```bash
-npx hardhat node
-#open a new terminal
-node scripts/api.js
-# open a new terminal
-cd .chainlink-local/
-chainlink -c config.toml -s secrets.toml local n
-#open a new terminal
-npx hardhat run scripts/deploy-and-setup.ts --network localhost
-# copy the Functions Router Address and add it to functions-job.toml
-npx hardhat run scripts/stress-test.ts --network localhost
-```
+## Project Structure
 
-[Node Web GUI](#node-web-gui)
-
-## Running everithing together (docker)
-DISABLE FIREWALL or the node cannot connect to the EVM!
-```bash
-# Hardhat needs to be started differently
-npx hardhat node --hostname 0.0.0.0 --port 8545
-#open a new terminal
-node scripts/api.js
-# open a new terminal
-# if container exists: docker rm -f cl-postgres
-docker run -d --name cl-postgres --network chainlink-net \
-  -e POSTGRES_USER=chainlink \
-  -e POSTGRES_PASSWORD=mysecretpassword \
-  -e POSTGRES_DB=chainlink_db \
-  -p 5432:5432 \
-  postgres:17
-# if container exists: docker rm -f chainlink
-cd ~/.chainlink-local && docker run --name chainlink --network chainlink-net -v ~/.chainlink-local:/chainlink -it -p 6688:6688 --add-host=host.docker.internal:host-gateway smartcontract/chainlink:2.29.0 node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
-# open a new termscripts/inal
-npx hardhat run scripts/deploy-and-setup.ts --network localhost
-# copy the Functions Router Address and add it to functions-job.toml
-npx hardhat run scripts/stress-test.ts --network localhost
-```
-
-## Dockerize the system and run
-```bash
-# create the container
-docker-compose up -d --build
-# stopping the container, -v flag delets the persistent storage
-docker-compose down -v
-# easy restart
-docker-compose down -v && docker-compose up -d
-# restart only the chainlink node (keeps database)
-docker-compose restart postgres chainlink
-# chainlink containers last 50 line, (-f "follow", update the logs).
-docker-compose logs --tail=50 -f chainlink
-```
-
-if you can't see ndoe activity in the EVMs logs diable firewall
-
-[Node Web GUI](#node-web-gui)
+- `contracts/`: Solidity smart contracts (Consumer, Oracle, LinkToken).
+- `scripts/`: TypeScript deployment, tracing, and stress-testing scripts.
+- `chainlink-config/`: Optimized TOML configurations.
+- `docker-compose.yml`: Infrastructure definition.
+- `.env`: Contract addresses and jobId
 
 ## Troubleshooting
 
-#### Nonce too high.
-#### Restart local PostgreSQL
+### Port is already in use
+This problem is usually caaused by postgres already runnin. To solve it simply run:
+sudo systemctl stop postgres
+
 ```bash
-# Switch to postgres user
-sudo -u postgres psql
-
-# Drop database for Chainlink
-DROP DATABASE "chainlink-local";
-
-# Create database for Chainlink
-CREATE DATABASE "chainlink-local";
-
-# Exit PostgreSQL
-\q
+lsof -i :PORT NUMBER # from this you'll see all the running processes
+# look for the PROCESS ID or PID
+kill PID
 ```
 
-### docker: Error response from daemon:
+### Chainlink node is unresponsive/doesn't register new requests / "RPC endpoint detected out of sync" in chainlink logs
+This can happen if the Chainlink Node does not receive *"life signal"* from hardhat
 
-#### Conflict. The container name "..." is already in use by container ...
+To fix it restart chainlink container:
 ```bash
-docker rm -f cl-postgres
+docker-compose restart chainlink
 ```
 
-#### failed to set up container networking: driver failed programming external connectivity on endpoint ...: failed to bind host port for 0.0.0.0:5432:172.19.0.2:5432/tcp: address already in use
+or everithing:
 ```bash
-sudo lsof -i :5432
-sudo systemctl stop postgresql
-docker rm -f cl-postgres
-```
-
-#### RPC Rate Limiting
-If you see "Too Many Requests" errors:
-- Upgrade your RPC provider plan, or
-- Switch to a different provider, or
-- Add rate limiting configuration to `config.toml`:
-
-```toml
-[[EVM]]
-ChainID = '31337'
-
-[EVM.HeadTracker]
-HistoryDepth = 10
-MaxBufferSize = 10
-SamplingInterval = '5s'
-
-[[EVM.Nodes]]
-Name = 'Sepolia'
-WSURL = 'wss://your-websocket-url-here'
-HTTPURL = 'https://your-http-url-here'
+docker-compose down -v && docker-compose up -d
 ```
