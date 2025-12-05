@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # HARDHAT BLOCKCHAIN
   hardhat:
@@ -12,7 +10,6 @@ services:
     networks:
       - chainlink-net
     volumes:
-      #- ./hardhat.config.ts:/app/hardhat.config.ts
       - .:/app             # we mirror the entire folder
       - /app/node_modules  # EXCEPTION: the container uses its own node_modules, not the poject's!
     healthcheck:

@@ -1,6 +1,4 @@
 FROM node:20
-# FROM node:20-alpine # try if works
-# FROM node:20-slim # try if works
 
 WORKDIR /app
 
