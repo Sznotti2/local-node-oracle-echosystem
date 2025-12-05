@@ -27,15 +27,13 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		hardhat: {
-			// Ez definiálja, hogyan viselkedjen a "npx hardhat node" parancs.(server)
-			// ITT NEM LEHET URL!
+			// used by "npx hardhat node" command.(server)
 			chainId: 31337,
 		},
 		localhost: {
-			// Ezt használja a deploy script és a setup container, (kliens)
-			// hogy csatlakozzon a fenti node-hoz.
+			// used by the clients to connect to hardhats JSON-RPC server
 			chainId: 31337,
-			url: process.env.HARDHAT_URL || "http://127.0.0.1:8545",
+			url: process.env.HARDHAT_URL || "http://127.0.0.1:8545", // HARDHAT_URL exposed 
 		},
 	},
 	defaultNetwork: "localhost",

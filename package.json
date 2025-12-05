@@ -7,8 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "api": "npx hardhat run scripts/api.ts",
     "setup": "npx hardhat run scripts/deploy-and-setup.ts --network localhost",
-    "stress-test": "npx hardhat run scripts/stress-test.ts --network localhost",
-    "step-test": "npx hardhat run scripts/step-load-stress-test.ts --network localhost"
+    "step-test": "npx hardhat run scripts/step-load-stress-test.ts --network localhost",
+    "demo": "npx hardhat run scripts/trace-request.ts --network localhost",
+    "balance": "npx hardhat run scripts/check-balances.ts --network localhost"
   },
   "keywords": [
     "Local",

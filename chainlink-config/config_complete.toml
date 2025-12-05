@@ -27,6 +27,11 @@ LogPollInterval = '1s' # default 15s, reduce idle time
 FinalityDepth = 1 # default 50, transactions are final after we see them in one block
 NoNewHeadsThreshold = '0' # Default '3m'
 
+[[EVM.Nodes]]
+Name = 'Hardhat'
+HTTPURL = 'http://hardhat:8545'
+WSURL = 'ws://hardhat:8545'
+
 [EVM.Transactions]
 # This is the most important for stress testing:
 # How many transactions can be in the mempool at once (unconfirmed)
@@ -56,8 +61,3 @@ PollFailureThreshold = 1000 # default 5, Set to zero to disable poll checking.
 # keep the last 50 successful runs in the DB and UI, setting to 0 increases performance
 MaxSuccessfulRuns = 50 # default 10000
 # ResultWriteQueueDepth = 1000
-
-[[EVM.Nodes]]
-Name = 'Hardhat'
-HTTPURL = 'http://hardhat:8545'
-WSURL = 'ws://hardhat:8545'

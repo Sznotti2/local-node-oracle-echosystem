@@ -1,14 +1,13 @@
-# Dockerfile
 FROM node:20
 
 WORKDIR /app
 
-# Függőségek telepítése
+# intall depenedcies
 COPY package.json package-lock.json ./
 RUN npm init -y && npm install express body-parser
 
-# Forráskód másolása
+# copy source code
 COPY scripts/api.js /app/api.js
 
-# Indítás
+# start
 CMD ["node", "api.js"]

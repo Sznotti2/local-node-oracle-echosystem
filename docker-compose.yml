@@ -1,27 +1,27 @@
 version: '3.8'
 
 services:
-  # 1. HARDHAT BLOCKCHAIN
+  # HARDHAT BLOCKCHAIN
   hardhat:
     build:
       context: .  
       dockerfile: Dockerfile.hardhat
     container_name: hardhat-node
     ports:
-      - "8545:8545" # Hogy a teszt script a gépedről is elérje
+      - "8545:8545" # So that the test script can also access your machine
     networks:
       - chainlink-net
     volumes:
       #- ./hardhat.config.ts:/app/hardhat.config.ts
-      - .:/app             # A teljes mappát betükrözzük
-      - /app/node_modules  # KIVÉTEL: A konténer saját node_modules-át használja, ne a gépedét!
+      - .:/app             # we mirror the entire folder
+      - /app/node_modules  # EXCEPTION: the container uses its own node_modules, not the poject's!
     healthcheck:
       test: ["CMD", "curl", "-f", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}', "http://localhost:8545"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # 2. EXTERNAL API
+  # EXTERNAL API
   api:
     build:
       context: .
@@ -35,7 +35,7 @@ services:
     networks:
       - chainlink-net
 
-  # 3. POSTGRES DATABASE
+  # POSTGRES DATABASE
   postgres:
     image: postgres:17
     container_name: cl-postgres
@@ -54,7 +54,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # 4. CHAINLINK NODE
+  # CHAINLINK NODE
   chainlink:
     image: smartcontract/chainlink:2.29.0
     container_name: chainlink
@@ -69,7 +69,7 @@ services:
       - ./chainlink-config:/chainlink
     command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
     environment:
-      - HARDHAT_URL=http://hardhat:8545 # Belső hálózati cím
+      - HARDHAT_URL=http://hardhat:8545 # internal network address
     networks:
       - chainlink-net
     restart: on-failure

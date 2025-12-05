@@ -1,16 +1,22 @@
 import { ethers } from "hardhat";
 
 
-// --- KONFIGURÁCIÓ ---
-const CONSUMER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-const JOB_ID = "1d320673e76245aab12ac929a794d2b2";
+const CONSUMER_ADDRESS = process.env.CONSUMER_ADDRESS;
+const JOB_ID = process.env.JOB_ID;
 
-// Itt állítsd be a lépcsőket. A script ezen fog végigmenni sorban.
+if (!CONSUMER_ADDRESS || !JOB_ID) {
+	console.error("❌ Error: Missing environment variables in the .env file!");
+	console.log("Required variables:");
+    console.log(` - CONSUMER_ADDRESS: ${CONSUMER_ADDRESS || "MISSING"}`);
+    console.log(` - JOB_ID: ${JOB_ID || "MISSING"}`);
+    process.exit(1);
+}
+
 const TEST_SCENARIOS = [
     10,
-    15,
-    20, // kiegészült a transaction résszel
-    25,  /*
+    15,/*
+    20,
+    25,
     50,
     75,
     100,
@@ -25,10 +31,9 @@ const TEST_SCENARIOS = [
     3000,*/
 ];
 
-const COOLDOWN_SECONDS = 10; // Két tesztkör közötti pihenő idő
-const BASE_TIMEOUT = 60;     // Alap timeout másodpercben
+const COOLDOWN_SECONDS = 10;
+const BASE_TIMEOUT = 30;     // Base timeout in seconds
 
-// --- SEGÉD ADATOK ---
 const CITIES = [
     "London", "Paris", "NewYork", "Tokyo", "Sydney",
     "Moscow", "Dubai", "Berlin", "Rome", "Madrid", "Szeged",
@@ -67,34 +72,43 @@ function calculateStats(times: number[]) {
 
 async function runBatch(requestCount: number, consumer: any, provider: any): Promise<BatchResult> {
     console.log(`\n---------------------------------------------------------`);
-    console.log(`🚀 STARTING BATCH: ${requestCount} requests`);
+    console.log(`\tSTARTING BATCH: ${requestCount} requests`);
     console.log(`---------------------------------------------------------`);
 
-    // Dinamikus timeout: minél több a kérés, annál több időt adunk
-    // pl. 100 kérésnél 60s + 10s = 70s, 1000 kérésnél 60s + 100s = 160s
+    // Dynamic timeout: the more requests, the more time we allow
+    // e.g. for 100 requests 30s + 10s = 40s, for 1000 requests 30s + 100s = 130s
     const dynamicTimeout = BASE_TIMEOUT + (requestCount * 0.1); 
     
     const startBlock = await provider.getBlockNumber();
     const requestMap = new Map<string, RequestData>();
     const burstStartTime = Date.now();
     
-    // --- 1. KÜLDÉS (SENDING PHASE) ---
+    // SENDING PHASE
     const txPromises = [];
     let sendErrors = 0;
 
     for (let i = 0; i < requestCount; i++) {
         const sendTime = Date.now();
         
-        const p = consumer.requestTemperature(getRandomCity(), JOB_ID)
+        const transaction = consumer.requestTemperature(getRandomCity(), JOB_ID)
             .then(async (tx: any) => {
                 const receipt = await tx.wait(1);
                 const minedTime = Date.now();
-                const event = receipt.events?.find((e: any) => e.event === 'RequestCreated');
 
-                if (event && event.args) {
-                    const requestId = event.args.requestId;
-                    
-                    // Race condition kezelés (ha a poller gyorsabb volt)
+				let requestId: string = "";
+				for (const log of receipt.logs) {
+					try {
+						const parsedLog = consumer.interface.parseLog(log);
+						if (parsedLog.name === 'RequestCreated') {
+							requestId = parsedLog.args.requestId;
+							break;
+						}
+					} catch (e) {
+					}
+				}
+
+				if (requestId) {
+                    // Race condition handling
                     let data = requestMap.get(requestId);
                     if (!data) {
                         data = { sendTime, createdTime: minedTime, isComplete: false };
@@ -104,34 +118,36 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
                         data.createdTime = minedTime;
                     }
                     process.stdout.write(`\rSending... (${i + 1}/${requestCount})`);
+                } else {
+                    console.error("\n❌ Error: Could not extract RequestID from logs!");
+                    sendErrors++;
                 }
             })
             .catch((e: any) => {
-                // Itt kapjuk el a "Transaction throttling" vagy hálózati hibákat
                 sendErrors++;
-                process.stdout.write("X");
-                // Nem írjuk ki a full errort, hogy ne szemetelje tele a konzolt, de számoljuk
             });
             
-        txPromises.push(p);
+        txPromises.push(transaction);
     }
 
-    // Megvárjuk a küldést
+    // wait for all the transactions to be sent
     await Promise.all(txPromises);
     
     if (sendErrors > 0) {
-        console.log(`\n⚠️  Warning: ${sendErrors} requests failed during sending (Network/Node limit reached?)`);
+        console.log(`\nWarning: ${sendErrors} requests failed during sending (Network/Node limit reached?)`);
     } else {
-        console.log(`\n✅ All ${requestCount} requests sent. Polling for responses...`);
+        console.log(`\nAll ${requestCount} requests sent. Polling for responses...`);
     }
 
-    // --- 2. VÁRAKOZÁS (POLLING PHASE) ---
+    // POLLING PHASE
+    // we use polling because this is the most reliable way to look for events
+    // if automining is turned off and interval set to lower than 1s ethers cannot reliably perceive events
     let receivedCount = 0;
     let elapsedTime = 0;
     const checkInterval = 1000;
     const filter = consumer.filters.RequestFulfilled();
 
-    // Várakozunk, amíg meg nem jön minden, vagy le nem telik az idő
+    // wait till everithing comes back or time is up
     while (receivedCount < (requestCount - sendErrors) && elapsedTime < dynamicTimeout * 1000) {
         try {
             const currentBlock = await provider.getBlockNumber();
@@ -144,7 +160,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
 
                 if (data) {
                     if (!data.fulfilledTime) {
-                        data.fulfilledTime = Date.now(); // Becsült idő
+                        data.fulfilledTime = Date.now();
                         if (data.createdTime && !data.isComplete) {
                             data.isComplete = true;
                             receivedCount++;
@@ -162,9 +178,9 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
     }
 
     const totalDuration = (Date.now() - burstStartTime) / 1000;
-    console.log(`\n🏁 Batch finished in ${totalDuration.toFixed(2)}s`);
+    console.log(`\nBatch finished in ${totalDuration.toFixed(2)}s`);
 
-    // --- STATISZTIKA ÖSSZEÁLLÍTÁSA ---
+    // STATISTICAL COMPILATION
     const writeLatencies: number[] = [];
     const nodeLatencies: number[] = [];
 
@@ -196,48 +212,41 @@ async function main() {
     console.log("       AUTOMATED BREAKING POINT STRESS TEST       ");
     console.log("==================================================");
     
-    const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS);
+    const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS as string);
     const provider = ethers.provider;
     
     const allResults: BatchResult[] = [];
 
-    // Fő ciklus: végigmegyünk a teszt eseteken
     for (const count of TEST_SCENARIOS) {
-        // Futtatjuk a batch-et
         const result = await runBatch(count, consumer, provider);
         allResults.push(result);
 
-        // Kiírjuk az aktuális eredményt
-        console.log(`   -> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(0)}ms | TPS: ${result.tps.toFixed(2)}`);
+        console.log(`\t-> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(0)}ms | TPS: ${result.tps.toFixed(2)}`);
 
-        // BREAKING POINT ELLENŐRZÉS
-        // Ha a sikeresség 100% alá esik, megállunk (vagy ha túl sok a hiba)
+        // BREAKING POINT CHECK
+        // stop if success rate drops below 100%
         if (result.successRate < 100) {
-            console.log(`\n🛑 BREAKING POINT REACHED at ${count} requests!`);
-            console.log(`   Reason: Only ${result.successCount}/${count} succeeded.`);
+            console.log(`\nBREAKING POINT REACHED at ${count} requests!`);
+            console.log(`\tReason: Only ${result.successCount}/${count} succeeded.`);
             break;
         }
 
-        // Pihenő a következő kör előtt (hogy a node/db kitisztuljon)
+        // rest time before next round (node and db can clear itself)
         console.log(`\n💤 Cooling down for ${COOLDOWN_SECONDS}s...`);
         await new Promise(r => setTimeout(r, COOLDOWN_SECONDS * 1000));
     }
 
-    // --- VÉGSŐ JELENTÉS ---
-    console.log("\n\n========================================================================================");
+    console.log("\n\n=======================================================================================================================");
     console.log("                               FINAL SUMMARY REPORT                                     ");
-    console.log("========================================================================================");
-    // console.log("Reqs\t| Success\t| Rate\t| TPS\t| Node Latency\t| Status");
-    console.log("Status\t| Reqs\t\t| Rate\t| Total Duration\t| TPS\t| Node Latency");
-    console.log("----------------------------------------------------------------------------------------");
+    console.log("=======================================================================================================================");
+    console.log("Status\t\t| Reqs\t\t| Rate\t| Total Duration\t| TPS\t| Node Latency\t| Errors");
+    console.log("-----------------------------------------------------------------------------------------------------------------------");
     
     allResults.forEach(r => {
-        const status = r.successRate === 100 ? "✅ PASS" : `❌ FAIL`;
-        // console.log(`${r.count}\t| ${r.successCount}\t\t| ${r.successRate.toFixed(0)}%\t| ${r.tps.toFixed(1)}\t| ${r.avgNodeLatency.toFixed(0)} ms\t| ${status}`);
-        console.log(`${status}\t| ${r.count}\t\t| ${r.successRate.toFixed(0)}%\t| ${r.totalTime} s\t\t| ${r.tps.toFixed(1)}\t| ${r.avgNodeLatency.toFixed(0)} ms`);
-        console.log(`Error: ${r.error || "Low rate"}`);
+        const status = r.successRate === 100 ? "✅ PASSED" : `❌ FAILED`;
+        console.log(`${status}\t| ${r.count}\t\t| ${r.successRate.toFixed(0)}%\t| ${r.totalTime} s\t\t| ${r.tps.toFixed(1)}\t| ${r.avgNodeLatency.toFixed(0)} ms\t| ${r.error || "-"}`);
     });
-    console.log("========================================================================================");
+    console.log("=======================================================================================================================");
 }
 
 main()

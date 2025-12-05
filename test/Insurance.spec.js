@@ -1,6 +1,6 @@
-const { ethers } = require("hardhat")
-const { assert, expect } = require("chai")
-const { loadFixture, time } = require("@nomicfoundation/hardhat-network-helpers")
+import { ethers } from "hardhat"
+import { assert, expect } from "chai";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
 
 describe("Consumer contract", function() {

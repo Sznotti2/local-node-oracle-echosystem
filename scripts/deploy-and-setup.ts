@@ -42,8 +42,7 @@ async function main() {
   console.log(`Minted ${ethers.formatUnits(mintAmount, 18)} LINK to deployer`);
   
   // Fund ConsumerContract with LINK so it can make requests
-  const fundAmount = ethers.parseUnits("1000", 18);
-  let tx = await link.transfer(consumerAddress, fundAmount);
+  let tx = await link.transfer(consumerAddress, mintAmount);
   await tx.wait();
   console.log(`Funded ConsumerContract with 1000 LINK`);
 
@@ -51,21 +50,11 @@ async function main() {
   // this is needed to pay for gas when fulfilling requests (writing to the blockchain)
   const txEth = await deployer.sendTransaction({
     to: nodeWalletAddress,
-    value: ethers.parseEther("50"),
+    value: ethers.parseEther("1"),
   });
   await txEth.wait();
-  console.log("Node wallet funded with 50 ETH");
+  console.log("Node wallet funded with 1 ETH");
 
-  // Write addresses to deploy-output.json
-  /*
-  const out = {
-    LINK_ADDRESS: link.address,
-    OPERATOR_ADDRESS: operator.address,
-    CONSUMER_ADDRESS: consumer.address,
-  };
-  fs.writeFileSync(path.join(process.cwd(), "deploy-output.json"), JSON.stringify(out, null, 2));
-  console.log("Wrote deploy-output.json");
-  */
   console.log("Setup complete!");
 }
 

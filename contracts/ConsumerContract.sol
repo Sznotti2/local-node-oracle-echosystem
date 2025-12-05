@@ -60,14 +60,8 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
             this.fulfillTemperature.selector
         );
 
-		// string memory apiUrl = string.concat(
-		// 	"http://127.0.0.1:5000/weather?city=",
-		// 	city
-		// );
-		// Use host.docker.internal to access host machine from a Docker container
 		string memory apiUrl = string.concat(
-            // "http://host.docker.internal:5000/weather?city=",
-			"http://local-api:5000/weather?city=",
+			"http://local-api:5000/weather?city=",	// 'local-api' is the Docker service name
 			city
 		);
 		req._add("apiUrl", apiUrl);
