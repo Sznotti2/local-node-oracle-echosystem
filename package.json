@@ -4,7 +4,8 @@
   "description": "Local Chainlink Oracle Echosystem for My Thesis Work",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "hardhat test test/unit/*.spec.js",
+    "ci-test": "hardhat test test/unit/*.spec.js --no-compile",
     "api": "npx hardhat run scripts/api.ts",
     "setup": "npx hardhat run scripts/deploy-and-setup.ts --network localhost",
     "stress-test": "npx hardhat run scripts/stress-test.ts --network localhost",
