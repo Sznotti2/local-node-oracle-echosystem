@@ -9,22 +9,25 @@ as it has solutions to common problems.
 
 ## Table of Contents
 
-  - [Table of Contents](#table-of-contents)
-  - [Core Components](#core-components)
-  - [Prerequisites](#prerequisites)
-  - [Install](#install)
-  - [Setup](#setup)
-  - [Running Experiments](#running-experiments)
-    - [Request Tracing (Demo)](#request-tracing-demo)
-    - [System Diagnostics](#system-diagnostics)
-    - [Test the Network](#test-the-network)
-      - [Basic Stress Test](#basic-stress-test)
-      - [Step-load Stress Test](#step-load-stress-test)
-    - [Metrics gathered:](#metrics-gathered)
-    - [Useful Commands \& Monitoring](#useful-commands--monitoring)
-  - [Configuration \& Optimization](#configuration--optimization)
-  - [Project Structure](#project-structure)
-  - [Troubleshooting](#troubleshooting)
+- [Complete Guide: Running a Local Oracle Network](#complete-guide-running-a-local-oracle-network)
+	- [Table of Contents](#table-of-contents)
+	- [Core Components](#core-components)
+	- [Prerequisites](#prerequisites)
+	- [Install](#install)
+	- [Setup](#setup)
+	- [Running Experiments](#running-experiments)
+		- [Request Tracing (Demo)](#request-tracing-demo)
+		- [System Diagnostics](#system-diagnostics)
+		- [Test the Network](#test-the-network)
+			- [Basic Stress Test](#basic-stress-test)
+			- [Step-load Stress Test](#step-load-stress-test)
+		- [Metrics gathered:](#metrics-gathered)
+		- [Useful Commands \& Monitoring](#useful-commands--monitoring)
+	- [Configuration \& Optimization](#configuration--optimization)
+	- [Project Structure](#project-structure)
+	- [Troubleshooting](#troubleshooting)
+		- [Port is already in use](#port-is-already-in-use)
+		- [Chainlink node is unresponsive/doesn't register new requests / "RPC endpoint detected out of sync" in chainlink logs](#chainlink-node-is-unresponsivedoesnt-register-new-requests--rpc-endpoint-detected-out-of-sync-in-chainlink-logs)
 
 ## Core Components
 The system operates as a microservices cluster orchestrated via Docker Compose:
@@ -63,9 +66,9 @@ After installation finishes:
 
 2. copy the Node's Wallet Address and paste it in the *.env* file (NODE_ADDRESS=...)
 3. copy the code from chainlink-config/job.toml and go back to the UI, 
-4. click on "Add JOB" button
+4. click on "New Job" button
 5. paste the code in the textarea
-6. click on "Create JOB"
+6. click on "Create Job"
 
 in the terminal run
 ```bash
