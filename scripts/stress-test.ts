@@ -57,10 +57,18 @@ async function main() {
 
 
 	const TIMEOUT_SECONDS = 30;		// time to wait for all responses in seconds
-	const CONSUMER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-	const JOB_ID = "1d320673e76245aab12ac929a794d2b2";
+	const CONSUMER_ADDRESS = process.env.CONSUMER_ADDRESS as string;
+	const JOB_ID = process.env.JOB_ID as string;
 
-	console.log(`=== CHAINLINK ROBUST POLL-BASED TEST: ${REQUEST_COUNT} requests ===`);
+	if (!CONSUMER_ADDRESS || !JOB_ID) {
+		console.error("❌ Error: Missing environment variables in the .env file!");
+		console.log("Required variables:");
+		console.log(` - CONSUMER_ADDRESS: ${CONSUMER_ADDRESS || "MISSING"}`);
+		console.log(` - JOB_ID: ${JOB_ID || "MISSING"}`);
+		process.exit(1);
+	}
+
+	console.log(`=== CHAINLINK POLL-BASED TEST: ${REQUEST_COUNT} requests ===`);
 
 	const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS);
 	const provider = ethers.provider;
@@ -86,11 +94,20 @@ async function main() {
 				const receipt = await tx.wait(1);
 				const minedTime = Date.now();
 
-				const event = receipt.events?.find((e: any) => e.event === 'RequestCreated');
 
-				if (event && event.args) {
-					const requestId = event.args.requestId;
+				let requestId: string = "";
+				for (const log of receipt.logs) {
+					try {
+						const parsedLog = consumer.interface.parseLog(log);
+						if (parsedLog!.name === 'RequestCreated') {
+							requestId = parsedLog!.args.requestId;
+							break;
+						}
+					} catch (e) {
+					}
+				}
 
+				if (requestId) {
 					let data = requestMap.get(requestId);
 					if (!data) {
 						// szupergyors blokkidő esetén az ethers.js nem biztos h megtalálja az eseményt
@@ -102,8 +119,28 @@ async function main() {
 						data.createdTime = minedTime;
 					}
 					// process.stdout.write(".");
-					process.stdout.write(`\rSending... (${i}/${REQUEST_COUNT})`);
+					process.stdout.write(`\rSending... (${i + 1}/${REQUEST_COUNT})`);
 				}
+
+
+				// const event = receipt.events?.find((e: any) => e.event === 'RequestCreated');
+
+				// if (event && event.args) {
+				// 	const requestId = event.args.requestId;
+
+				// 	let data = requestMap.get(requestId);
+				// 	if (!data) {
+				// 		// szupergyors blokkidő esetén az ethers.js nem biztos h megtalálja az eseményt
+				// 		data = { sendTime: sendTime, createdTime: minedTime, isComplete: false };
+				// 		requestMap.set(requestId, data);
+				// 	} else {
+				// 		// Ha a poller előbb megtalálta volna (kicsi az esély, de lehetséges)
+				// 		data.sendTime = sendTime;
+				// 		data.createdTime = minedTime;
+				// 	}
+				// 	// process.stdout.write(".");
+				// 	process.stdout.write(`\rSending... (${i}/${REQUEST_COUNT})`);
+				// }
 			})
 			.catch((e: any) => {
 				process.stdout.write("X");
@@ -159,6 +196,7 @@ async function main() {
 		// Opcionális: Progress bar frissítése, hogy lásd, él a script
 		process.stdout.write(`\rWaiting... (${receivedCount}/${REQUEST_COUNT})`);
 	}
+	const totalDuration = (Date.now() - burstStartTime) / 1000;
 
 	// STATISZTIKÁK FELDOLGOZÁSA
 	const writeLatencies: number[] = [];
@@ -173,7 +211,6 @@ async function main() {
 
 	const writeStats = calculateStats(writeLatencies);
 	const nodeStats = calculateStats(nodeLatencies);
-	const totalDuration = (Date.now() - burstStartTime) / 1000;
 
 	console.log("\n\n================================================");
 	console.log(`              TEST REPORT                       `);

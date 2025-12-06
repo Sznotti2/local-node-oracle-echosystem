@@ -14,12 +14,12 @@ if (!CONSUMER_ADDRESS || !JOB_ID) {
 
 const TEST_SCENARIOS = [
     10,
-    15,/*
+    15,
     20,
     25,
     50,
     75,
-    100,
+    100,/*
     150,
     200,
     250, 
