@@ -14,7 +14,7 @@ services:
       - /app/node_modules  # EXCEPTION: the container uses its own node_modules, not the poject's!
     healthcheck:
       test: ["CMD", "curl", "-f", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}', "http://localhost:8545"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -34,7 +34,7 @@ services:
 
   # POSTGRES DATABASE
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: cl-postgres
     environment:
       POSTGRES_USER: chainlink
@@ -70,6 +70,29 @@ services:
     networks:
       - chainlink-net
     restart: on-failure
+  
+  # SAVE CHAINLINK NODE ADDRESS TO .env
+  chainlink-setup:
+    image: alpine:latest
+    container_name: chainlink-setup
+    depends_on:
+      chainlink:
+        condition: service_started
+    networks:
+      - chainlink-net
+    volumes:
+      - ./.env:/app/.env                        # Írási jog a host .env fájljára
+      - ./chainlink-config:/app/chainlink-config # Olvasási jog a jelszavakhoz
+      - ./update_env_with_node_address.sh:/app/update_env_with_node_address.sh
+    working_dir: /app
+    environment:
+      - CHAINLINK_URL=http://chainlink:6688
+    command: >
+      /bin/sh -c "apk add --no-cache curl bash dos2unix && 
+      cp update_env_with_node_address.sh /tmp/script.sh && 
+      dos2unix /tmp/script.sh && 
+      chmod +x /tmp/script.sh && 
+      /tmp/script.sh"
 
 networks:
   chainlink-net:

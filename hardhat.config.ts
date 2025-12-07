@@ -36,7 +36,6 @@ const config: HardhatUserConfig = {
 			url: process.env.HARDHAT_URL || "http://127.0.0.1:8545", // HARDHAT_URL exposed 
 		},
 	},
-	// defaultNetwork: "localhost",
 };
 
 export default config;

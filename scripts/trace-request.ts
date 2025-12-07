@@ -21,13 +21,13 @@ async function main() {
     console.log(`Job ID:   ${JOB_ID}`);
     console.log("\n--- 📡 LISTENING FOR EVENTS... ---");
 
-	consumer.on("RequestCreated", (requestId: any, city: string) => {
-        console.log(`\n[4] 🏁 Consumer: RequestCreated event detected!`);
+	consumer.on("RequestCreated", (requestId: string, city: string) => {
+        console.log(`\n[0] 🏁 Consumer: RequestCreated event detected!`);
         console.log(`    ├─ Request ID:  ${requestId}`);
         console.log(`    └─ City: ${city}`);
     });
 
-	linkToken.on("Transfer(address,address,uint256,bytes)", (from: any, to: any, value: any, data: any) => {
+	linkToken.on("Transfer(address,address,uint256,bytes)", (from: string, to: string, value: bigint, data: any) => {
         if (to === OPERATOR_ADDRESS) {
             console.log(`\n[1] 🟢 LinkToken: Transfer (ERC677) event detected`);
             console.log(`    ├─ From:   ${from} (Consumer)`);
@@ -54,7 +54,7 @@ async function main() {
         }
     });
 
-    operator.on("OracleRequest", (specId: any, requester: any, requestId: any, payment: any, callbackAddr: any, callbackFunc: any, expiration: any, dataVersion: any, data: any) => {
+    operator.on("OracleRequest", (specId: string, requester: string, requestId: string, payment: bigint, callbackAddr: string, callbackFunc: string, expiration: any, dataVersion: any, data: any) => {
         let decodedSpecId = specId;
         try {
             decodedSpecId = ethers.decodeBytes32String(specId);
@@ -70,19 +70,19 @@ async function main() {
         console.log("\n   ⏳ Waiting for Chainlink Node (Off-chain processing)...");
     });
 
-    consumer.on("ChainlinkRequested", (id: any) => {
+    consumer.on("ChainlinkRequested", (id: string) => {
        console.log(`\n[Info] ℹ️  Consumer: ChainlinkRequested log (ID: ${id})`); 
     });
 
-    operator.on("OracleResponse", (requestId: any) => {
+    operator.on("OracleResponse", (requestId: string) => {
         console.log(`\n[3] 🟣 Operator: OracleResponse event detected`);
         console.log(`    └─ Request ID: ${requestId}`);
     });
 
-    consumer.on("RequestFulfilled", (requestId: any, temperature: any) => {
+    consumer.on("RequestFulfilled", (requestId: string, temperature: bigint) => {
         console.log(`\n[4] 🏁 Consumer: RequestFulfilled event detected!`);
         console.log(`    ├─ Request ID:  ${requestId}`);
-        console.log(`    └─ Temperature: ${temperature.toString()} °C`);
+        console.log(`    └─ Temperature: ${temperature} °C`);
         
         console.log("\n✅ TRACE COMPLETE. Exiting...");
         process.exit(0);
