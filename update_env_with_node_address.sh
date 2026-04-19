@@ -58,16 +58,16 @@ fi
 
 echo "Found address: $NODE_ADDRESS"
 
-# Check if NODE_WALLET exists
-if grep -q "^NODE_WALLET=" "$ENV_FILE"; then
+# Check if NODE_ADDRESS exists
+if grep -q "^NODE_ADDRESS=" "$ENV_FILE"; then
   # Replace with temp file
-  sed "s/^NODE_WALLET=.*/NODE_WALLET=$NODE_ADDRESS/" "$ENV_FILE" > "$ENV_FILE.tmp"
+  sed "s/^NODE_ADDRESS=.*/NODE_ADDRESS=$NODE_ADDRESS/" "$ENV_FILE" > "$ENV_FILE.tmp"
   cat "$ENV_FILE.tmp" > "$ENV_FILE"
   rm "$ENV_FILE.tmp"
-  echo ".env updated (NODE_WALLET replaced)."
+  echo ".env updated (NODE_ADDRESS replaced)."
 else
   # Add
   echo "" >> "$ENV_FILE"
-  echo "NODE_WALLET=$NODE_ADDRESS" >> "$ENV_FILE"
-  echo ".env updated (NODE_WALLET added)."
+  echo "NODE_ADDRESS=$NODE_ADDRESS" >> "$ENV_FILE"
+  echo ".env updated (NODE_ADDRESS added)."
 fi

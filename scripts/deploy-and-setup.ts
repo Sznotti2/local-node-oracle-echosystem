@@ -1,10 +1,21 @@
 import { ethers } from "hardhat";
+import * as fs from "fs";
+import * as path from "path";
 
 async function main() {
-  const nodeWalletAddress = process.env.CHAINLINK_NODE_ADDRESS || process.env.NODE_WALLET;
+  const nodeWalletAddress = process.env.NODE_ADDRESS || process.env.NODE_WALLET;
+  const CHAINLINK_NODE_URL = process.env.CHAINLINK_NODE_URL || "http://localhost:6688";
+
+  const credentialsPath = path.join(__dirname, "../chainlink-config/apicredentials");
+  const API_EMAIL = fs.readFileSync(credentialsPath, "utf-8").split("\n")[0];
+  const API_PASSWORD = fs.readFileSync(credentialsPath, "utf-8").split("\n")[1];
+
+  if (!API_EMAIL || !API_PASSWORD) {
+    throw new Error("Az apicredentials fájl üres vagy hibás formátumú!");
+  }
   
   if (!nodeWalletAddress) {
-    throw new Error("CHAINLINK_NODE_ADDRESS or NODE_WALLET env variable is missing!");
+    throw new Error("NODE_ADDRESS env variable is missing!");
   }
 
   const [deployer] = await ethers.getSigners();
@@ -26,6 +37,78 @@ async function main() {
   const txAuth = await operator.setAuthorizedSenders([nodeWalletAddress]);
   await txAuth.wait();
   console.log("Authorized sender set:", nodeWalletAddress);
+
+  console.log("Creating Chainlink Job...");
+  try {
+	console.log(`Sign in to the Chainlink API with the ${API_EMAIL} account...`);
+    const loginResponse = await fetch(`${CHAINLINK_NODE_URL}/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: API_EMAIL, password: API_PASSWORD }),
+    });
+
+    if (!loginResponse.ok) {
+        throw new Error(`Failed to login to Chainlink API: ${loginResponse.statusText}`);
+    }
+
+    const cookie = loginResponse.headers.get("set-cookie");
+
+    const jobSpecToml = `
+type = "directrequest"
+schemaVersion = 1
+name = "Get > Uint256"
+externalJobID = "1d320673-e762-45aa-b12a-c929a794d2b2"
+maxTaskDuration = "0s"
+contractAddress = "${operatorAddress}"
+evmChainID = "31337"
+minIncomingConfirmations = 0
+observationSource = """
+	decode_log   [type="ethabidecodelog"
+				abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
+				data="$(jobRun.logData)"
+				topics="$(jobRun.logTopics)"]
+
+	decode_cbor  [type="cborparse" data="$(decode_log.data)"]
+	fetch        [type="http" method=GET url="$(decode_cbor.apiUrl)" allowUnrestrictedNetworkAccess="true"]
+	parse        [type="jsonparse" path="$(decode_cbor.path)" data="$(fetch)"]
+
+	multiply     [type="multiply" input="$(parse)" times="100"]
+
+	encode_data  [type="ethabiencode" abi="(bytes32 requestId, uint256 value)" data="{ \\\\"requestId\\\\": $(decode_log.requestId), \\\\"value\\\\": $(multiply) }"]
+	encode_tx    [type="ethabiencode"
+				abi="fulfillOracleRequest2(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes calldata data)"
+				data="{\\\\"requestId\\\\": $(decode_log.requestId), \\\\"payment\\\\":   $(decode_log.payment), \\\\"callbackAddress\\\\": $(decode_log.callbackAddr), \\\\"callbackFunctionId\\\\": $(decode_log.callbackFunctionId), \\\\"expiration\\\\": $(decode_log.cancelExpiration), \\\\"data\\\\": $(encode_data)}"
+				]
+	submit_tx    [type="ethtx" to="${operatorAddress}" data="$(encode_tx)"]
+
+	decode_log -> decode_cbor -> fetch -> parse -> multiply -> encode_data -> encode_tx -> submit_tx
+"""
+    `;
+
+	console.log("Submitting job to Chainlink Node...");
+    const jobResponse = await fetch(`${CHAINLINK_NODE_URL}/v2/jobs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": cookie || "",
+      },
+      body: JSON.stringify({ toml: jobSpecToml }),
+    });
+
+    if (!jobResponse.ok) {
+        const errorData = await jobResponse.json();
+        throw new Error(`Failed to create job: ${JSON.stringify(errorData)}`);
+    }
+
+    const jobData = await jobResponse.json();
+    console.log(`Job successfully created!`);
+    console.log(`Job ID (UUID): ${jobData.data.id}`);
+    console.log(`External Job ID: ${jobData.data.attributes.externalJobID}`);
+
+  } catch (error) {
+    console.error("Error creating Chainlink Job:", error);
+  }
+
 
   // Deploy ConsumerContract
   const consumer = await ethers.deployContract("ConsumerContract", [linkAddress, operatorAddress]);

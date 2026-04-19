@@ -5,7 +5,7 @@ async function main() {
     const linkTokenAddr = process.env.LINKTOKEN_ADDRESS;
     const operatorAddr = process.env.OPERATOR_ADDRESS;
     const consumerAddr = process.env.CONSUMER_ADDRESS;
-    const nodeWalletAddr = process.env.NODE_WALLET || process.env.CHAINLINK_NODE_ADDRESS;
+    const nodeWalletAddr = process.env.NODE_WALLET || process.env.NODE_ADDRESS;
 
     if (!linkTokenAddr || !operatorAddr || !consumerAddr || !nodeWalletAddr) {
         console.error("❌ ERROR: Missing environment variables in the .env file!");
@@ -13,7 +13,7 @@ async function main() {
         console.log(` - LINKTOKEN_ADDRESS: ${linkTokenAddr || "MISSING"}`);
         console.log(` - OPERATOR_ADDRESS: ${operatorAddr || "MISSING"}`);
         console.log(` - CONSUMER_ADDRESS: ${consumerAddr || "MISSING"}`);
-        console.log(` - NODE_WALLET: ${nodeWalletAddr || "MISSING"}`);
+        console.log(` - NODE_ADDRESS: ${nodeWalletAddr || "MISSING"}`);
         process.exit(1);
     }
 

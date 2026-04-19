@@ -29,6 +29,10 @@ const config: HardhatUserConfig = {
 		hardhat: {
 			// used by "npx hardhat node" command.(server)
 			chainId: 31337,
+            mining: {
+                auto: false,
+                interval: 400
+            }
 		},
 		localhost: {
 			// used by the clients to connect to hardhats JSON-RPC server

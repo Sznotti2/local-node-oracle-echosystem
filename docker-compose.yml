@@ -94,6 +94,26 @@ services:
       chmod +x /tmp/script.sh && 
       /tmp/script.sh"
 
+  # DEPLOY AND SETUP SMART CONTRACTS
+  contracts-deploy:
+    build:
+      context: .
+      dockerfile: Dockerfile.hardhat # same image as hardhat
+    container_name: contracts-deploy
+    depends_on:
+      hardhat:
+        condition: service_healthy
+      chainlink-setup:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+    command: npm run setup
+    networks:
+      - chainlink-net
+
 networks:
   chainlink-net:
     driver: bridge

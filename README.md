@@ -14,7 +14,6 @@ as it has solutions to common problems.
 	- [Core Components](#core-components)
 	- [Prerequisites](#prerequisites)
 	- [Install](#install)
-	- [Setup](#setup)
 	- [Running Experiments](#running-experiments)
 		- [Request Tracing (Demo)](#request-tracing-demo)
 		- [System Diagnostics](#system-diagnostics)
@@ -54,28 +53,7 @@ npm i
 docker-compose up -d --build # it will take some time
 ```
 
-The docker-compose command will build and start 4 containers in detached mode using the `-d` flag.
-
-## Setup
-After installation finishes:
-1. log in to the node's UI at http://localhost:6688
-- *API Email:* `admin@email.com`
-- *API Password:* `StrongPassword123`
-  
-(credentials are stored in chainlink-config/apicredentials)
-
-2. copy the Node's Wallet Address and paste it in the *.env* file (NODE_ADDRESS=...)
-3. copy the code from chainlink-config/job.toml and go back to the UI, 
-4. click on "New Job" button
-5. paste the code in the textarea
-6. click on "Create Job"
-
-in the terminal run
-```bash
-npm run setup
-```
-
-**The steps in [Setup](#setup) needs to be done every time the network is restarted!**
+The docker-compose command will build and start all containers in detached mode using the `-d` flag.
 
 ## Running Experiments
 This project includes specialized scripts to trace transactions and perform load testing. All scripts should be run from your host machine.

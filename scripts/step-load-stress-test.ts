@@ -1,14 +1,12 @@
 import { ethers } from "hardhat";
+import * as fs from 'fs';
 
 
 const CONSUMER_ADDRESS = process.env.CONSUMER_ADDRESS;
 const JOB_ID = process.env.JOB_ID;
 
 if (!CONSUMER_ADDRESS || !JOB_ID) {
-	console.error("❌ Error: Missing environment variables in the .env file!");
-	console.log("Required variables:");
-    console.log(` - CONSUMER_ADDRESS: ${CONSUMER_ADDRESS || "MISSING"}`);
-    console.log(` - JOB_ID: ${JOB_ID || "MISSING"}`);
+	console.error("Error: Missing CONSUMER_ADDRESS or JOB_ID in the .env file!");
     process.exit(1);
 }
 
@@ -19,11 +17,11 @@ const TEST_SCENARIOS = [
     25,
     50,
     75,
-    100,/*
+    100,
     150,
     200,
     250, 
-    500,
+    500,/*
     750, // careful with these!
     1000, 
     1500,
@@ -31,8 +29,26 @@ const TEST_SCENARIOS = [
     3000,*/
 ];
 
-const COOLDOWN_SECONDS = 10;
-const BASE_TIMEOUT = 30;     // Base timeout in seconds
+const TIMEOUT_FOR_BATCH = [
+    10,
+    10,
+    12,
+    12,
+    14,
+    16,
+    18,
+    18,
+    18,
+    22,
+    24,
+    26,
+    27, 
+    28,
+    29, 
+    30,
+];
+
+const COOLDOWN_SECONDS = 5;
 
 const CITIES = [
     "London", "Paris", "NewYork", "Tokyo", "Sydney",
@@ -55,154 +71,154 @@ interface BatchResult {
     count: number;
     successCount: number;
     successRate: number;
-    avgWriteLatency: number;
     avgNodeLatency: number;
-    totalTime: number;
+    avgTotalLatency: number;
+    effectiveDuration: number;
     tps: number;
+    totalRequestCostETH: string;
+    totalFulfillmentCostETH: string;
     error?: string;
 }
 
-function calculateStats(times: number[]) {
-    if (times.length === 0) return { min: 0, max: 0, avg: 0 };
-    const min = Math.min(...times);
-    const max = Math.max(...times);
-    const avg = times.reduce((a, b) => a + b, 0) / times.length;
-    return { min, max, avg };
-}
-
 async function runBatch(requestCount: number, consumer: any, provider: any): Promise<BatchResult> {
-    console.log(`\n---------------------------------------------------------`);
-    console.log(`\tSTARTING BATCH: ${requestCount} requests`);
-    console.log(`---------------------------------------------------------`);
-
-    // Dynamic timeout: the more requests, the more time we allow
-    // e.g. for 100 requests 30s + 10s = 40s, for 1000 requests 30s + 100s = 130s
-    const dynamicTimeout = BASE_TIMEOUT + (requestCount * 0.1); 
+    // console.log(`\n---------------------------------------------------------`);
+    // console.log(`\tSTARTING BATCH: ${requestCount} requests`);
+    // console.log(`---------------------------------------------------------`);
     
     const startBlock = await provider.getBlockNumber();
     const requestMap = new Map<string, RequestData>();
-    const burstStartTime = Date.now();
     
-    // SENDING PHASE
+    let totalRequestCost = 0n;
+    let totalFulfillmentCost = 0n;
+    const processedTxHashes = new Set<string>(); 
+    
+    // SENDING PHASE 
     const txPromises = [];
     let sendErrors = 0;
-
-    for (let i = 0; i < requestCount; i++) {
-        const sendTime = Date.now();
-        
-        const transaction = consumer.requestTemperature(getRandomCity(), JOB_ID)
-            .then(async (tx: any) => {
-                const receipt = await tx.wait(1);
-                const minedTime = Date.now();
-
-				let requestId: string = "";
-				for (const log of receipt.logs) {
-					try {
-						const parsedLog = consumer.interface.parseLog(log);
-						if (parsedLog.name === 'RequestCreated') {
-							requestId = parsedLog.args.requestId;
-							break;
-						}
-					} catch (e) {
-					}
-				}
-
-				if (requestId) {
-                    // Race condition handling
-                    let data = requestMap.get(requestId);
-                    if (!data) {
-                        data = { sendTime, createdTime: minedTime, isComplete: false };
-                        requestMap.set(requestId, data);
-                    } else {
-                        data.sendTime = sendTime;
-                        data.createdTime = minedTime;
-                    }
-                    process.stdout.write(`\rSending... (${i + 1}/${requestCount})`);
-                } else {
-                    console.error("\n❌ Error: Could not extract RequestID from logs!");
-                    sendErrors++;
-                }
-            })
-            .catch((e: any) => {
-                sendErrors++;
-            });
-            
-        txPromises.push(transaction);
-    }
-
-    // wait for all the transactions to be sent
-    await Promise.all(txPromises);
+    const signers = await ethers.getSigners();
+    let currentNonce = await provider.getTransactionCount(signers[0].address);
+    const burstStartTime = Date.now();
     
-    if (sendErrors > 0) {
-        console.log(`\nWarning: ${sendErrors} requests failed during sending (Network/Node limit reached?)`);
-    } else {
-        console.log(`\nAll ${requestCount} requests sent. Polling for responses...`);
+    for (let i = 0; i < requestCount; i++) {
+        const txPromise = consumer.requestTemperature(getRandomCity(), JOB_ID, { 
+            nonce: currentNonce++,
+            gasLimit: 500000 
+        }).catch((e: any) => {
+            sendErrors++;
+			console.error(`\n[Send Error] Nonce: ${currentNonce - 1} | Message: ${e.shortMessage || e.message}`);
+        });
+        txPromises.push(txPromise);
     }
 
-    // POLLING PHASE
-    // we use polling because this is the most reliable way to look for events
-    // if automining is turned off and interval set to lower than 1s ethers cannot reliably perceive events
+    await Promise.all(txPromises);
+    console.log(`All ${requestCount} requests sent. Measuring execution...`);
+
+    // POLLING & MEASUREMENT PHASE
     let receivedCount = 0;
     let elapsedTime = 0;
-    const checkInterval = 1000;
-    const filter = consumer.filters.RequestFulfilled();
+    let batchCounter = 0;
+    const checkInterval = 200; //TODO: tweak this and see how the results change
+    const dynamicTimeout = TIMEOUT_FOR_BATCH[batchCounter % TIMEOUT_FOR_BATCH.length] * 1000; 
+    
+    const createdFilter = consumer.filters.RequestCreated();
+    const fulfilledFilter = consumer.filters.RequestFulfilled();
 
-    // wait till everithing comes back or time is up
-    while (receivedCount < (requestCount - sendErrors) && elapsedTime < dynamicTimeout * 1000) {
+    while (receivedCount < (requestCount - sendErrors) && elapsedTime < dynamicTimeout) {
+        batchCounter++;
         try {
             const currentBlock = await provider.getBlockNumber();
-            const events = await consumer.queryFilter(filter, startBlock, currentBlock);
+            const now = Date.now();
+            
+            // RequestCreated events
+            const createdEvents = await consumer.queryFilter(createdFilter, startBlock, currentBlock);
+            for (const event of createdEvents) {
+                const args = (event as any).args;
+                const requestId = args.requestId;
+                
+                if (!requestMap.has(requestId)) {
+                    requestMap.set(requestId, {
+                        sendTime: burstStartTime, 
+                        createdTime: now, // accurate to the nearest 200ms polling tick
+                        isComplete: false
+                    });
 
-            for (const event of events) {
+                    if (!processedTxHashes.has(event.transactionHash)) {
+                        const receipt = await provider.getTransactionReceipt(event.transactionHash);
+                        totalRequestCost += (receipt.gasUsed as bigint) * (receipt.gasPrice as bigint);
+                        processedTxHashes.add(event.transactionHash);
+                    }
+                }
+            }
+
+            // RequestFulfilled events
+            const fulfilledEvents = await consumer.queryFilter(fulfilledFilter, startBlock, currentBlock);
+            for (const event of fulfilledEvents) {
                 const args = (event as any).args;
                 const requestId = args.requestId;
                 let data = requestMap.get(requestId);
 
-                if (data) {
-                    if (!data.fulfilledTime) {
-                        data.fulfilledTime = Date.now();
-                        if (data.createdTime && !data.isComplete) {
-                            data.isComplete = true;
-                            receivedCount++;
-                        }
+                if (data && !data.fulfilledTime) {
+                    data.fulfilledTime = now; // Accurate to the nearest 200ms polling tick
+                    if (data.createdTime && !data.isComplete) {
+                        data.isComplete = true;
+                        receivedCount++;
+                    }
+
+                    if (!processedTxHashes.has(event.transactionHash)) {
+                        const receipt = await provider.getTransactionReceipt(event.transactionHash);
+                        totalFulfillmentCost += (receipt.gasUsed as bigint) * (receipt.gasPrice as bigint);
+                        processedTxHashes.add(event.transactionHash);
                     }
                 }
             }
         } catch (e: any) {
-            console.log("Polling error (ignoring):", e.message);
+			console.warn(`Warning: Error during event polling - ${e.message}`);
         }
 
         await new Promise(r => setTimeout(r, checkInterval));
         elapsedTime += checkInterval;
-        process.stdout.write(`\rWaiting... (${receivedCount}/${requestCount}) - Time: ${(elapsedTime/1000).toFixed(0)}s`);
+        process.stdout.write(`\rProcessing... (${receivedCount}/${requestCount} fulfilled)\n`);
     }
 
-    const totalDuration = (Date.now() - burstStartTime) / 1000;
-    console.log(`\nBatch finished in ${totalDuration.toFixed(2)}s`);
-
-    // STATISTICAL COMPILATION
-    const writeLatencies: number[] = [];
-    const nodeLatencies: number[] = [];
+    // statistics
+	const endToEndLatencies: number[] = [];
+	const oracleLatencies: number[] = [];
+    let maxEndTime = 0;
 
     requestMap.forEach((data) => {
-        if (data.createdTime && data.fulfilledTime && data.sendTime > 0) {
-            writeLatencies.push(data.createdTime - data.sendTime);
-            nodeLatencies.push(data.fulfilledTime - data.createdTime);
+        if (data.createdTime && data.fulfilledTime) {
+			oracleLatencies.push(data.fulfilledTime - data.createdTime); // oracle processing time (from block mined till fulfillment)
+			endToEndLatencies.push(data.fulfilledTime - data.sendTime); // complete end-to-end time (from script send to fulfillment)
+			if (data.fulfilledTime > maxEndTime) {
+                maxEndTime = data.fulfilledTime;
+            }
         }
     });
 
-    const writeStats = calculateStats(writeLatencies);
-    const nodeStats = calculateStats(nodeLatencies);
-    const successRate = (receivedCount / requestCount) * 100;
+    const avgOracleLatency = oracleLatencies.length > 0 
+        ? oracleLatencies.reduce((a, b) => a + b, 0) / oracleLatencies.length 
+        : 0;
+
+    const avgEndToEndLatency = endToEndLatencies.length > 0 
+        ? endToEndLatencies.reduce((a, b) => a + b, 0) / endToEndLatencies.length 
+        : 0;
+	
+    // TPS using timestamps
+	let effectiveDuration = 0; 
+	if (maxEndTime > burstStartTime) {
+		effectiveDuration = (maxEndTime - burstStartTime) / 1000;
+	}
 
     return {
         count: requestCount,
         successCount: receivedCount,
-        successRate: successRate,
-        avgWriteLatency: writeStats.avg,
-        avgNodeLatency: nodeStats.avg,
-        totalTime: totalDuration,
-        tps: receivedCount / totalDuration,
+        successRate: (receivedCount / requestCount) * 100,
+        avgNodeLatency: avgOracleLatency / 1000, // only Chainlink speed
+        avgTotalLatency: avgEndToEndLatency / 1000, // from send to fulfillment
+        effectiveDuration: effectiveDuration,
+        tps: receivedCount / effectiveDuration,
+        totalRequestCostETH: ethers.formatEther(totalRequestCost),
+        totalFulfillmentCostETH: ethers.formatEther(totalFulfillmentCost),
         error: sendErrors > 0 ? `${sendErrors} send errors` : (receivedCount < requestCount ? "Timeout" : undefined)
     };
 }
@@ -221,9 +237,8 @@ async function main() {
         const result = await runBatch(count, consumer, provider);
         allResults.push(result);
 
-        console.log(`\t-> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(0)}ms | TPS: ${result.tps.toFixed(2)}`);
+        // console.log(` -> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(3)}ms | Effective Latency: ${result.effectiveDuration.toFixed(3)}ms | TPS: ${result.tps.toFixed(3)}`);
 
-        // BREAKING POINT CHECK
         // stop if success rate drops below 100%
         if (result.successRate < 100) {
             console.log(`\nBREAKING POINT REACHED at ${count} requests!`);
@@ -232,21 +247,33 @@ async function main() {
         }
 
         // rest time before next round (node and db can clear itself)
-        console.log(`\n💤 Cooling down for ${COOLDOWN_SECONDS}s...`);
+        // console.log(`\nCooldown period for ${COOLDOWN_SECONDS}s...`);
         await new Promise(r => setTimeout(r, COOLDOWN_SECONDS * 1000));
     }
 
     console.log("\n\n=======================================================================================================================");
     console.log("                               FINAL SUMMARY REPORT                                     ");
     console.log("=======================================================================================================================");
-    console.log("Status\t\t| Reqs\t\t| Rate\t| Total Duration\t| TPS\t| Node Latency\t| Errors");
+    console.log("Requests\t| TPS\t| Node Latency\t| avgTotalLatency\t| Effective Duration \t| Request Cost (ETH)\t| Node Cost (ETH)\t| Errors");
     console.log("-----------------------------------------------------------------------------------------------------------------------");
     
     allResults.forEach(r => {
-        const status = r.successRate === 100 ? "✅ PASSED" : `❌ FAILED`;
-        console.log(`${status}\t| ${r.count}\t\t| ${r.successRate.toFixed(0)}%\t| ${r.totalTime} s\t\t| ${r.tps.toFixed(1)}\t| ${r.avgNodeLatency.toFixed(0)} ms\t| ${r.error || "-"}`);
+        console.log(`${r.count}\t\t| ${r.tps.toFixed(0)}\t| ${r.avgNodeLatency.toFixed(3)} ms \t| ${r.avgTotalLatency.toFixed(3)} ms \t| ${r.effectiveDuration.toFixed(3)} ms \t\t| ${Number(r.totalRequestCostETH).toFixed(6)}\t\t| ${Number(r.totalFulfillmentCostETH).toFixed(6)}\t\t| ${r.error || "-"}`);
     });
     console.log("=======================================================================================================================");
+
+
+	// save results to CSV
+    const csvHeader = "Config,Nodes,Requests,Success Rate (%),Average Node Latency (ms),Average Total Latency (ms),Effective Duration (ms),TPS,Request Cost(ETH),Node Cost (ETH)\n";
+    let csvContent = "";
+
+    allResults.forEach(r => {
+        //! change these based on the tests 'Base', '1'
+        csvContent += `Complete,1,${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
+    });
+
+    fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);
+    console.log("📁 Results appended to stress_test_results.csv");
 }
 
 main()

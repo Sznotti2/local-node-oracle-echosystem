@@ -103,7 +103,7 @@ async function main() {
     setTimeout(() => {
         console.log("\n❌ TIMEOUT: No response from the Node within the expected time.");
         process.exit(1);
-    }, 60000);
+    }, 6000); // 6 seconds timeout should be enough
 }
 
 main().catch((error) => {
