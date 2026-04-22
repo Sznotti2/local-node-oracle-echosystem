@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 import * as fs from 'fs';
+import { getEnvVariables, getRandomCity, RequestData, BatchResult } from "../utils/helper";
 
 
-const CONSUMER_ADDRESS = process.env.CONSUMER_ADDRESS;
-const JOB_ID = process.env.JOB_ID;
+const { CONSUMER_ADDRESS, JOB_ID } = getEnvVariables();
 
 if (!CONSUMER_ADDRESS || !JOB_ID) {
 	console.error("Error: Missing CONSUMER_ADDRESS or JOB_ID in the .env file!");
@@ -28,7 +28,6 @@ const TEST_SCENARIOS = [
     2000, 
     3000,
 ];
-
 const TIMEOUT_FOR_BATCH = [
     10,
     10,
@@ -49,37 +48,6 @@ const TIMEOUT_FOR_BATCH = [
 ];
 
 const COOLDOWN_SECONDS = 5;
-
-const CITIES = [
-    "London", "Paris", "NewYork", "Tokyo", "Sydney",
-    "Moscow", "Dubai", "Berlin", "Rome", "Madrid", "Szeged",
-];
-
-function getRandomCity(): string {
-    const index = Math.floor(Math.random() * CITIES.length);
-    return CITIES[index];
-}
-
-interface RequestData {
-    sendTime: number;
-    createdTime?: number;
-    fulfilledTime?: number;
-    isComplete: boolean;
-}
-
-interface BatchResult {
-    count: number;
-    successCount: number;
-    successRate: number;
-    avgNodeLatency: number;
-    avgTotalLatency: number;
-    effectiveDuration: number;
-    tps: number;
-    totalRequestCostETH: string;
-    totalFulfillmentCostETH: string;
-    error?: string;
-}
-
 async function runBatch(requestCount: number, consumer: any, provider: any): Promise<BatchResult> {
     const startBlock = await provider.getBlockNumber();
     const requestMap = new Map<string, RequestData>();
@@ -265,7 +233,7 @@ async function main() {
 
     allResults.forEach(r => {
         //! change these based on the tests 'Base', '1'
-        csvContent += `Complete,1,${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
+        csvContent += `Base,1,${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
     });
 
     fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);

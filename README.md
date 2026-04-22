@@ -48,12 +48,11 @@ The system operates as a microservices cluster orchestrated via Docker Compose:
 ```bash
 git clone https://github.com/Sznotti2/local-node-oracle-echosystem.git
 cd local-node-oracle-echosystem
-cp .env.example .env # create .env file
 npm i
-docker-compose up -d --build # it will take some time
+docker compose up -d --build # it will take some time
 ```
 
-The docker-compose command will build and start all containers in detached mode using the `-d` flag.
+The docker compose command will build and start all containers in detached mode using the `-d` flag.
 
 ## Running Experiments
 This project includes specialized scripts to trace transactions and perform load testing. All scripts should be run from your host machine.
@@ -96,12 +95,12 @@ npm run step-test
 ### Useful Commands & Monitoring
 
 ```bash
-docker-compose up -d # runs all containers in detached mode
-docker-compose down -v # stops all containers and deletes databse
-docker-compose restart <chainlink | api | hardhat | cl-postgres> # restarts container
-docker-compose logs -f <chainlink | api | hardhat | cl-postgres> # prints live logs of specified container
-docker-compose logs -f --tail=50 <chainlink | api | hardhat | cl-postgres> # last 50 Hardhat Logs
-docker-compose ps # shows container status
+docker compose up -d # runs all containers in detached mode
+docker compose down -v # stops all containers and deletes databse
+docker compose restart <chainlink | api | hardhat | cl-postgres> # restarts container
+docker compose logs -f <chainlink | api | hardhat | cl-postgres> # prints live logs of specified container
+docker compose logs -f --tail=50 <chainlink | api | hardhat | cl-postgres> # last 50 Hardhat Logs
+docker compose ps # shows container status
 ```
 
 ## Configuration & Optimization
@@ -130,7 +129,7 @@ A key part of this thesis work was tuning the Chainlink Node to survive high-loa
 - `contracts/`: Solidity smart contracts (Consumer, Oracle, LinkToken).
 - `scripts/`: TypeScript deployment, tracing, and stress-testing scripts.
 - `chainlink-config/`: Optimized TOML configurations.
-- `docker-compose.yml`: Infrastructure definition.
+- `docker compose.yml`: Infrastructure definition.
 - `.env`: Contract addresses and jobId
 
 ## Troubleshooting
@@ -150,10 +149,10 @@ This can happen if the Chainlink Node does not receive *"life signal"* from hard
 
 To fix it restart chainlink container:
 ```bash
-docker-compose restart chainlink
+docker compose restart chainlink
 ```
 
 or everithing:
 ```bash
-docker-compose down -v && docker-compose up -d
+docker compose down -v && docker compose up -d
 ```

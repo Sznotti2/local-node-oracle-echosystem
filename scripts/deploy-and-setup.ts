@@ -1,19 +1,14 @@
 import { ethers } from "hardhat";
-import * as fs from "fs";
-import * as path from "path";
+import { updateEnvVariable, getEnvVariables, getNodeCredentials } from "../utils/helper";
 
 async function main() {
-	const nodeWalletAddress = process.env.NODE_ADDRESS || process.env.NODE_WALLET;
-	const CHAINLINK_URL = process.env.CHAINLINK_URL || "http://localhost:6688";
-
-	const credentialsPath = path.join(__dirname, "../chainlink-config/apicredentials");
-	const API_EMAIL = fs.readFileSync(credentialsPath, "utf-8").split("\n")[0];
-	const API_PASSWORD = fs.readFileSync(credentialsPath, "utf-8").split("\n")[1];
+	const { NODE_ADDRESS, CHAINLINK_URL, JOB_ID } = getEnvVariables();
+	const { email: API_EMAIL, password: API_PASSWORD } = getNodeCredentials();
 
 	if (!API_EMAIL || !API_PASSWORD) {
 		throw new Error("Check your apicredentials file! Missing API email or password.");
 	}
-	if (!nodeWalletAddress) {
+	if (!NODE_ADDRESS) {
 		throw new Error("NODE_ADDRESS env variable is missing!");
 	}
 
@@ -24,18 +19,20 @@ async function main() {
 	const link = await ethers.deployContract("LinkToken");
 	await link.waitForDeployment();
 	const linkAddress = await link.getAddress();
+	updateEnvVariable("LINKTOKEN_ADDRESS", linkAddress);
 	console.log("LinkToken deployed at: ", linkAddress);
 
 	// Deploy Operator
 	const operator = await ethers.deployContract("Operator", [linkAddress, deployer.address]);
 	await operator.waitForDeployment();
 	const operatorAddress = await operator.getAddress();
+	updateEnvVariable("OPERATOR_ADDRESS", operatorAddress);
 	console.log("Operator deployed at: ", operatorAddress);
 
 	// Authorize the node wallet address
-	const txAuth = await operator.setAuthorizedSenders([nodeWalletAddress]);
+	const txAuth = await operator.setAuthorizedSenders([NODE_ADDRESS]);
 	await txAuth.wait();
-	console.log("Authorized sender set:", nodeWalletAddress);
+	console.log("Authorized sender set:", NODE_ADDRESS);
 
 	console.log("Creating Chainlink Job...");
 	try {
@@ -57,7 +54,6 @@ async function main() {
 type = "directrequest"
 schemaVersion = 1
 name = "Get > Uint256"
-externalJobID = "1d320673-e762-45aa-b12a-c929a794d2b2"
 maxTaskDuration = "0s"
 contractAddress = "${operatorAddress}"
 evmChainID = "31337"
@@ -101,8 +97,8 @@ observationSource = """
 
 		const jobData = await jobResponse.json();
 		console.log(`Job successfully created!`);
-		console.log(`Job ID (UUID): ${jobData.data.id}`);
 		console.log(`External Job ID: ${jobData.data.attributes.externalJobID}`);
+		updateEnvVariable("JOB_ID", jobData.data.attributes.externalJobID.replace(/-/g, ""));
 
 	} catch (error) {
 		console.error("Error creating Chainlink Job:", error);
@@ -113,6 +109,7 @@ observationSource = """
 	const consumer = await ethers.deployContract("ConsumerContract", [linkAddress, operatorAddress]);
 	await consumer.waitForDeployment();
 	const consumerAddress = await consumer.getAddress();
+	updateEnvVariable("CONSUMER_ADDRESS", consumerAddress);
 	console.log("ConsumerContract deployed at:", consumerAddress);
 
 	// Mint test LINK to deployer so we can fund the consumer and the node
@@ -131,7 +128,7 @@ observationSource = """
 	// Fund node with ETH
 	// this is needed to pay for gas when fulfilling requests (writing to the blockchain)
 	const txEth = await deployer.sendTransaction({
-		to: nodeWalletAddress,
+		to: NODE_ADDRESS,
 		value: ethers.parseEther("1"),
 	});
 	await txEth.wait();

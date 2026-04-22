@@ -23,9 +23,9 @@ Enabled = true
 LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 MinIncomingConfirmations = 1 # default 3
 # How often to poll for logs (in ms, important for HTTP but also affects WS fallback)
-LogPollInterval = '1s' # default 15s, reduce idle time
+LogPollInterval = '3s' # default 15s, reduce idle time
 FinalityDepth = 1 # default 50, transactions are final after we see them in one block
-NoNewHeadsThreshold = '0' # Default '3m'
+NoNewHeadsThreshold = '3m' # Default '3m'
 
 [[EVM.Nodes]]
 Name = 'Hardhat'
@@ -39,9 +39,9 @@ MaxInFlight = 512 # default 16
 # How many transactions can wait in the DB for processing
 MaxQueued = 5000 # default 250
 # How often to check pending transactions
-ReaperInterval = '10s' # default 1h
+# ReaperInterval = '1h' # default 1h
 # How often to retry sending transactions, if hardhat block interval is less than 1s, this should be less than that
-ResendAfterThreshold = '10s' # default 1m
+# ResendAfterThreshold = '1m' # default 1m
 
 [EVM.GasEstimator]
 # For local testing, it's advisable to use a fixed price to save on estimateGas calls
@@ -55,7 +55,7 @@ BlockHistorySize = 0 # default 8
 
 [EVM.NodePool]
 #  how many consecutive polls must fail in order to mark a node as unreachable.
-PollFailureThreshold = 1000 # default 5, Set to zero to disable poll checking.
+# PollFailureThreshold = 5 # default 5, Set to zero to disable poll checking.
 
 [JobPipeline]
 # keep the last 50 successful runs in the DB and UI, setting to 0 increases performance

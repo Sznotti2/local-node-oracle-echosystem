@@ -17,7 +17,8 @@
 		"./scripts",
 		"./test",
 		"./typechain-types",
-		"./hardhat.config.ts"
+		"./hardhat.config.ts", 
+		"utils/helper.ts"
 	],
 	"exclude": [
 		"node_modules"

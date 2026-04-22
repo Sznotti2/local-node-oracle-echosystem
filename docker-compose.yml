@@ -1,4 +1,16 @@
 services:
+  # INIT ENV FILE
+  init-env:
+    image: alpine:latest
+    container_name: init-env
+    volumes:
+      - .:/app
+    command: >
+      /bin/sh -c "apk add --no-cache dos2unix &&
+      dos2unix /app/utils/init_env.sh &&
+      /bin/sh /app/utils/init_env.sh"
+    # dos2unix to convert the line endings of the script from Windows format to Unix format
+
   # HARDHAT BLOCKCHAIN
   hardhat:
     build:
@@ -81,9 +93,7 @@ services:
     networks:
       - chainlink-net
     volumes:
-      - ./.env:/app/.env                        # Írási jog a host .env fájljára
-      - ./chainlink-config:/app/chainlink-config # Olvasási jog a jelszavakhoz
-      - ./update_env_with_node_address.sh:/app/update_env_with_node_address.sh
+      - .:/app
     working_dir: /app
     environment:
       - CHAINLINK_URL=http://chainlink:6688
