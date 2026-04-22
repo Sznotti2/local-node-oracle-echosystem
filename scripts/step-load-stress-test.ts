@@ -21,12 +21,12 @@ const TEST_SCENARIOS = [
     150,
     200,
     250, 
-    500,/*
+    500,
     750, // careful with these!
     1000, 
     1500,
     2000, 
-    3000,*/
+    3000,
 ];
 
 const TIMEOUT_FOR_BATCH = [
@@ -81,10 +81,6 @@ interface BatchResult {
 }
 
 async function runBatch(requestCount: number, consumer: any, provider: any): Promise<BatchResult> {
-    // console.log(`\n---------------------------------------------------------`);
-    // console.log(`\tSTARTING BATCH: ${requestCount} requests`);
-    // console.log(`---------------------------------------------------------`);
-    
     const startBlock = await provider.getBlockNumber();
     const requestMap = new Map<string, RequestData>();
     
@@ -111,13 +107,13 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
     }
 
     await Promise.all(txPromises);
-    console.log(`All ${requestCount} requests sent. Measuring execution...`);
+    console.log(`\nAll ${requestCount} requests sent. Measuring execution...`);
 
     // POLLING & MEASUREMENT PHASE
     let receivedCount = 0;
     let elapsedTime = 0;
     let batchCounter = 0;
-    const checkInterval = 200; //TODO: tweak this and see how the results change
+    const checkInterval = 20; //TODO: tweak this and see how the results change
     const dynamicTimeout = TIMEOUT_FOR_BATCH[batchCounter % TIMEOUT_FOR_BATCH.length] * 1000; 
     
     const createdFilter = consumer.filters.RequestCreated();
@@ -177,7 +173,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
 
         await new Promise(r => setTimeout(r, checkInterval));
         elapsedTime += checkInterval;
-        process.stdout.write(`\rProcessing... (${receivedCount}/${requestCount} fulfilled)\n`);
+        process.stdout.write(`\rProcessing... (${receivedCount}/${requestCount} fulfilled)`);
     }
 
     // statistics
@@ -247,18 +243,18 @@ async function main() {
         }
 
         // rest time before next round (node and db can clear itself)
-        // console.log(`\nCooldown period for ${COOLDOWN_SECONDS}s...`);
+        console.log(`\nCooldown period for ${COOLDOWN_SECONDS}s...`);
         await new Promise(r => setTimeout(r, COOLDOWN_SECONDS * 1000));
     }
 
     console.log("\n\n=======================================================================================================================");
     console.log("                               FINAL SUMMARY REPORT                                     ");
     console.log("=======================================================================================================================");
-    console.log("Requests\t| TPS\t| Node Latency\t| avgTotalLatency\t| Effective Duration \t| Request Cost (ETH)\t| Node Cost (ETH)\t| Errors");
+    console.log("Requests | TPS\t| Node Latency\t| avgTotalLatency\t| Effective Duration \t| Request Cost (ETH)\t| Node Cost (ETH)\t| Errors");
     console.log("-----------------------------------------------------------------------------------------------------------------------");
     
     allResults.forEach(r => {
-        console.log(`${r.count}\t\t| ${r.tps.toFixed(0)}\t| ${r.avgNodeLatency.toFixed(3)} ms \t| ${r.avgTotalLatency.toFixed(3)} ms \t| ${r.effectiveDuration.toFixed(3)} ms \t\t| ${Number(r.totalRequestCostETH).toFixed(6)}\t\t| ${Number(r.totalFulfillmentCostETH).toFixed(6)}\t\t| ${r.error || "-"}`);
+        console.log(`${r.count}\t| ${r.tps.toFixed(0)}\t| ${r.avgNodeLatency.toFixed(3)} ms \t| ${r.avgTotalLatency.toFixed(3)} ms  \t\t| ${r.effectiveDuration.toFixed(3)} ms \t\t| ${Number(r.totalRequestCostETH).toFixed(6)}\t\t| ${Number(r.totalFulfillmentCostETH).toFixed(6)}\t\t| ${r.error || "-"}`);
     });
     console.log("=======================================================================================================================");
 
@@ -273,7 +269,7 @@ async function main() {
     });
 
     fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);
-    console.log("📁 Results appended to stress_test_results.csv");
+    console.log("Results appended to stress_test_results.csv");
 }
 
 main()

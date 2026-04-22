@@ -1,15 +1,17 @@
 import { ethers } from "hardhat";
 
 async function main() {
-    console.log("=== 🕵️  CHAINLINK REQUEST TRACER ===");
+    console.log("=== CHAINLINK REQUEST TRACER ===");
     
     const CONSUMER_ADDRESS = process.env.CONSUMER_ADDRESS;
     const LINK_ADDRESS = process.env.LINKTOKEN_ADDRESS;
     const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS;
-    const JOB_ID = process.env.JOB_ID || "1d320673e76245aab12ac929a794d2b2";
+    const JOB_ID = process.env.JOB_ID;
 
     if (!CONSUMER_ADDRESS || !LINK_ADDRESS || !OPERATOR_ADDRESS) {
         throw new Error("Could not find required addresses in the .env file!");
+    } else if (!JOB_ID) {
+        throw new Error("JOB_ID not found");
     }
 
     const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS) as any;

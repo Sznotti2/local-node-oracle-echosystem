@@ -110,6 +110,7 @@ services:
       - /app/node_modules
     environment:
       - HARDHAT_URL=http://hardhat:8545
+      - CHAINLINK_URL=http://chainlink:6688
     command: npm run setup
     networks:
       - chainlink-net
