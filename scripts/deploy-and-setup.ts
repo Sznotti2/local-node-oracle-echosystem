@@ -2,15 +2,8 @@ import { ethers } from "hardhat";
 import { updateEnvVariable, getEnvVariables, getNodeCredentials } from "../utils/helper";
 
 async function main() {
-	const { NODE_ADDRESS, CHAINLINK_URL, JOB_ID } = getEnvVariables();
-	const { email: API_EMAIL, password: API_PASSWORD } = getNodeCredentials();
-
-	if (!API_EMAIL || !API_PASSWORD) {
-		throw new Error("Check your apicredentials file! Missing API email or password.");
-	}
-	if (!NODE_ADDRESS) {
-		throw new Error("NODE_ADDRESS env variable is missing!");
-	}
+	const { NODE_ADDRESS, CHAINLINK_URL } = getEnvVariables();
+	const { email, password } = getNodeCredentials();
 
 	const [deployer] = await ethers.getSigners();
 	console.log("Deployer:", deployer.address);
@@ -36,11 +29,11 @@ async function main() {
 
 	console.log("Creating Chainlink Job...");
 	try {
-		console.log(`Sign in to the Chainlink API with the ${API_EMAIL} account...`);
+		console.log(`Sign in to the Chainlink API with the ${email} account...`);
 		const loginResponse = await fetch(`${CHAINLINK_URL}/sessions`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email: API_EMAIL, password: API_PASSWORD }),
+			body: JSON.stringify({ email, password }),
 		});
 
 		if (!loginResponse.ok) {

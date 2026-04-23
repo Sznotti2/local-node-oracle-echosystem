@@ -1,23 +1,16 @@
 import { ethers } from "hardhat";
+import { getEnvVariables } from "../utils/helper";
 
 
 async function main() {
-    const linkTokenAddr = process.env.LINKTOKEN_ADDRESS;
-    const operatorAddr = process.env.OPERATOR_ADDRESS;
-    const consumerAddr = process.env.CONSUMER_ADDRESS;
-    const nodeWalletAddr = process.env.NODE_WALLET || process.env.NODE_ADDRESS;
+	const { NODE_ADDRESS, CONSUMER_ADDRESS, OPERATOR_ADDRESS, LINKTOKEN_ADDRESS } = getEnvVariables();
 
-    if (!linkTokenAddr || !operatorAddr || !consumerAddr || !nodeWalletAddr) {
-        console.error("❌ ERROR: Missing environment variables in the .env file!");
-        console.log("Required variables:");
-        console.log(` - LINKTOKEN_ADDRESS: ${linkTokenAddr || "MISSING"}`);
-        console.log(` - OPERATOR_ADDRESS: ${operatorAddr || "MISSING"}`);
-        console.log(` - CONSUMER_ADDRESS: ${consumerAddr || "MISSING"}`);
-        console.log(` - NODE_ADDRESS: ${nodeWalletAddr || "MISSING"}`);
-        process.exit(1);
-    }
+	if (!NODE_ADDRESS || !CONSUMER_ADDRESS || !OPERATOR_ADDRESS || !LINKTOKEN_ADDRESS) {
+		console.error("Error: One or more environment variables are missing. Please check your .env file.");
+		return;
+	}
 
-    const linkToken = await ethers.getContractAt("LinkToken", linkTokenAddr);
+    const linkToken = await ethers.getContractAt("LinkToken", LINKTOKEN_ADDRESS);
     
     const [deployer] = await ethers.getSigners();
 
@@ -27,10 +20,10 @@ async function main() {
 
     const accounts = [
         { name: "Deployer (Admin)", address: deployer.address },
-        { name: "Chainlink Node Wallet", address: nodeWalletAddr },
-        { name: "Consumer Contract", address: consumerAddr },
-        { name: "Operator Contract", address: operatorAddr },
-        { name: "LinkToken Contract", address: linkTokenAddr }
+        { name: "Chainlink Node Wallet", address: NODE_ADDRESS },
+        { name: "Consumer Contract", address: CONSUMER_ADDRESS },
+        { name: "Operator Contract", address: OPERATOR_ADDRESS },
+        { name: "LinkToken Contract", address: LINKTOKEN_ADDRESS }
     ];
 
     for (const acc of accounts) {

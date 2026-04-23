@@ -29,10 +29,8 @@ if [ $RETRIES -eq 30 ]; then
     exit 1
 fi
 
-echo "Chainlink node available. Logging in..."
-
-
 # Login
+echo "Chainlink node available. Logging in..."
 COOKIE_JAR=$(mktemp)
 curl -s -c "$COOKIE_JAR" -X POST "$CL_URL/sessions" \
     -H "Content-Type: application/json" \
@@ -53,7 +51,15 @@ fi
 # update .env file
 echo "Updating .env"
 # Replace with temp file
-sed "s/^NODE_ADDRESS=.*/NODE_ADDRESS=$NODE_ADDRESS/" "$ENV_FILE" > "$ENV_FILE.tmp"
+sed "s|^NODE_ADDRESS=.*|NODE_ADDRESS=$NODE_ADDRESS|" "$ENV_FILE" > "$ENV_FILE.tmp"
 cat "$ENV_FILE.tmp" > "$ENV_FILE"
 rm "$ENV_FILE.tmp"
-echo ".env updated (NODE_ADDRESS replaced)."
+
+# updating NUMBER_OF_NODES in .env
+if grep -q "^NUMBER_OF_NODES=" "$ENV_FILE"; then
+	sed "s|^NUMBER_OF_NODES=.*|NUMBER_OF_NODES=1|" "$ENV_FILE" > "$ENV_FILE.tmp"
+	cat "$ENV_FILE.tmp" > "$ENV_FILE"
+	rm "$ENV_FILE.tmp"
+else
+	echo "NUMBER_OF_NODES=1" >> "$ENV_FILE"
+fi

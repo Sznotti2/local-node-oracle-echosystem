@@ -3,12 +3,7 @@ import * as fs from 'fs';
 import { getEnvVariables, getRandomCity, RequestData, BatchResult } from "../utils/helper";
 
 
-const { CONSUMER_ADDRESS, JOB_ID } = getEnvVariables();
-
-if (!CONSUMER_ADDRESS || !JOB_ID) {
-	console.error("Error: Missing CONSUMER_ADDRESS or JOB_ID in the .env file!");
-    process.exit(1);
-}
+const { CONSUMER_ADDRESS, JOB_ID, NUMBER_OF_NODES } = getEnvVariables();
 
 const TEST_SCENARIOS = [
     10,
@@ -17,7 +12,7 @@ const TEST_SCENARIOS = [
     25,
     50,
     75,
-    100,
+    100,/*
     150,
     200,
     250, 
@@ -26,7 +21,7 @@ const TEST_SCENARIOS = [
     1000, 
     1500,
     2000, 
-    3000,
+    3000,*/
 ];
 const TIMEOUT_FOR_BATCH = [
     10,
@@ -233,7 +228,7 @@ async function main() {
 
     allResults.forEach(r => {
         //! change these based on the tests 'Base', '1'
-        csvContent += `Base,1,${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
+        csvContent += `Complete,${NUMBER_OF_NODES},${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
     });
 
     fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);

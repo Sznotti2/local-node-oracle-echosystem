@@ -1,0 +1,287 @@
+services:
+  # INIT ENV FILE
+  init-env:
+    image: alpine:latest
+    container_name: init-env
+    volumes:
+      - .:/app
+    command: >
+      /bin/sh -c "apk add --no-cache dos2unix &&
+      dos2unix /app/utils/init_env.sh &&
+      /bin/sh /app/utils/init_env.sh"
+
+  # HARDHAT BLOCKCHAIN
+  hardhat:
+    build:
+      context: .  
+      dockerfile: Dockerfile.hardhat
+    container_name: hardhat-node
+    ports:
+      - "8545:8545" # So that the test script can also access your machine
+    networks:
+      - chainlink-net
+    volumes:
+      - .:/app             # we mirror the entire folder
+      - /app/node_modules  # EXCEPTION: the container uses its own node_modules, not the poject's!
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}', "http://localhost:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # EXTERNAL API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: local-api
+    volumes:
+      - ./scripts/api.js:/app/api.js
+    command: ["node", "api.js"]
+    ports:
+      - "5000:5000"
+    networks:
+      - chainlink-net
+
+  # POSTGRES DATABASES
+  postgres-1:
+    image: postgres:17-alpine
+    container_name: cl-postgres-1
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5432:5432"
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-2:
+    image: postgres:17-alpine
+    container_name: cl-postgres-2
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5433:5432" # Avoid port conflict with other postgres instances
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  postgres-3:
+    image: postgres:17-alpine
+    container_name: cl-postgres-3
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5434:5432"
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-4:
+    image: postgres:17-alpine
+    container_name: cl-postgres-4
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5435:5432"
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-5:
+    image: postgres:17-alpine
+    container_name: cl-postgres-5
+    environment:
+      POSTGRES_USER: chainlink
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: chainlink_db
+    command: postgres -c max_connections=300
+    ports:
+      - "5436:5432"
+    networks:
+      - chainlink-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlink -d chainlink_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # CHAINLINK NODES
+  chainlink-1:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink-1
+    depends_on:
+      postgres-1:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6688:6688"
+    volumes:
+      - ./nodes/chainlink-config-1:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545 # internal network address
+    networks:
+      - chainlink-net
+    restart: on-failure
+  
+  chainlink-2:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink-2
+    depends_on:
+      postgres-2:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6689:6688" # Avoid port conflict with other chainlink instances
+    volumes:
+      - ./nodes/chainlink-config-2:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+    networks:
+      - chainlink-net
+    restart: on-failure
+  
+  chainlink-3:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink-3
+    depends_on:
+      postgres-3:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6690:6688" # Avoid port conflict with other chainlink instances
+    volumes:
+      - ./nodes/chainlink-config-3:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+    networks:
+      - chainlink-net
+    restart: on-failure
+
+  chainlink-4:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink-4
+    depends_on:
+      postgres-4:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6691:6688" # Avoid port conflict with other chainlink instances
+    volumes:
+      - ./nodes/chainlink-config-4:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+    networks:
+      - chainlink-net
+    restart: on-failure
+
+  chainlink-5:
+    image: smartcontract/chainlink:2.29.0
+    container_name: chainlink-5
+    depends_on:
+      postgres-5:
+        condition: service_healthy
+      hardhat:
+        condition: service_healthy
+    ports:
+      - "6692:6688" # Avoid port conflict with other chainlink instances
+    volumes:
+      - ./nodes/chainlink-config-5:/chainlink
+    command: node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -a /chainlink/apicredentials
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+    networks:
+      - chainlink-net
+    restart: on-failure
+
+  # SAVE CHAINLINK NODE ADDRESS TO .env
+  chainlink-setup-don:
+    image: alpine:latest
+    container_name: chainlink-setup-don
+    depends_on:
+      chainlink-1:
+        condition: service_started
+      chainlink-2:
+        condition: service_started
+      chainlink-3:
+        condition: service_started
+      chainlink-4:
+        condition: service_started
+      chainlink-5:
+        condition: service_started
+    networks:
+      - chainlink-net
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      /bin/sh -c "apk add --no-cache curl bash dos2unix && 
+      cp /app/utils/update_env_don.sh /tmp/script.sh && 
+      dos2unix /tmp/script.sh && 
+      chmod +x /tmp/script.sh && 
+      /tmp/script.sh"
+
+  # DEPLOY AND SETUP SMART CONTRACTS
+  contracts-deploy-don:
+    build:
+      context: .
+      dockerfile: Dockerfile.hardhat # same image as hardhat
+    container_name: contracts-deploy-don
+    depends_on:
+      hardhat:
+        condition: service_healthy
+      chainlink-setup-don:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - HARDHAT_URL=http://hardhat:8545
+      - CHAINLINK_URL_1=http://chainlink-1:6688
+      - CHAINLINK_URL_2=http://chainlink-2:6688
+      - CHAINLINK_URL_3=http://chainlink-3:6688
+      - CHAINLINK_URL_4=http://chainlink-4:6688
+      - CHAINLINK_URL_5=http://chainlink-5:6688
+    command: npm run setup-don
+    networks:
+      - chainlink-net
+
+networks:
+  chainlink-net:
+    driver: bridge

@@ -99,7 +99,7 @@ services:
       - CHAINLINK_URL=http://chainlink:6688
     command: >
       /bin/sh -c "apk add --no-cache curl bash dos2unix && 
-      cp update_env_with_node_address.sh /tmp/script.sh && 
+      cp /app/utils/update_env_with_node_address.sh /tmp/script.sh && 
       dos2unix /tmp/script.sh && 
       chmod +x /tmp/script.sh && 
       /tmp/script.sh"

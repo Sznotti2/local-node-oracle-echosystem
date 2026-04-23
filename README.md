@@ -20,8 +20,12 @@ as it has solutions to common problems.
 		- [Test the Network](#test-the-network)
 			- [Basic Stress Test](#basic-stress-test)
 			- [Step-load Stress Test](#step-load-stress-test)
-		- [Metrics gathered:](#metrics-gathered)
+	- [Running multiple Chainlink nodes](#running-multiple-chainlink-nodes)
+		- [Balances](#balances)
+			- [Step-load Stress Test](#step-load-stress-test-1)
 		- [Useful Commands \& Monitoring](#useful-commands--monitoring)
+		- [Metrics gathered:](#metrics-gathered)
+		- [Useful Commands \& Monitoring](#useful-commands--monitoring-1)
 	- [Configuration \& Optimization](#configuration--optimization)
 	- [Project Structure](#project-structure)
 	- [Troubleshooting](#troubleshooting)
@@ -43,7 +47,7 @@ The system operates as a microservices cluster orchestrated via Docker Compose:
 
 
 ## Install
-1. Clone and Install Dependencies
+Clone and Install Dependencies
 
 ```bash
 git clone https://github.com/Sznotti2/local-node-oracle-echosystem.git
@@ -85,6 +89,39 @@ npm run stress-test
 This script incrementally increases the load (e.g., 10 -> 50 -> 100 -> 1000 requests) to find the exact point where the system fails or latency becomes unacceptable.
 ```bash
 npm run step-test
+```
+
+## Running multiple Chainlink nodes
+
+```bash
+cp -r nodes/chainlink-config-1 nodes/chainlink-config-2
+cp -r nodes/chainlink-config-1 nodes/chainlink-config-3
+cp -r nodes/chainlink-config-1 nodes/chainlink-config-4
+cp -r nodes/chainlink-config-1 nodes/chainlink-config-5
+# change the postgres reference to the correct database (cl-postgres-<config-number>:5432) in each nodes secrests.toml file 
+docker compose -f docker-compose-don.yml up -d --build
+```
+
+### Balances
+```bash
+npm run balance-don
+```
+
+#### Step-load Stress Test
+
+```bash
+npm run step-test-don
+```
+
+### Useful Commands & Monitoring
+
+```bash
+docker compose -f docker-compose-don.yml up -d
+docker compose -f docker-compose-don.yml down -v
+docker compose -f docker-compose-don.yml restart <chainlink | api | hardhat | cl-postgres>
+docker compose -f docker-compose-don.yml logs -f <chainlink | api | hardhat | cl-postgres>
+docker compose -f docker-compose-don.yml logs -f --tail=50 <chainlink | api | hardhat | cl-postgres>
+docker compose -f docker-compose-don.yml ps
 ```
 
 ### Metrics gathered:

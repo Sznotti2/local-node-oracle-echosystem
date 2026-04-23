@@ -15,3 +15,8 @@ node_modules
 
 # Hardhat Ignition default folder for deployments against a local node
 ignition/deployments/chain-31337
+
+nodes/chainlink-config-2
+nodes/chainlink-config-3
+nodes/chainlink-config-4
+nodes/chainlink-config-5
