@@ -1,6 +1,3 @@
-[Feature]
-LogPoller = true
-
 [Log]
 Level = 'warn'
 
@@ -22,5 +19,5 @@ HTTPURL = 'http://hardhat:8545'
 WSURL = 'ws://hardhat:8545'
 
 [EVM.Transactions]
-MaxInFlight = 512 # default 16
-MaxQueued = 5000 # default 250
+MaxInFlight = 0 # default 16
+MaxQueued = 0 # default 250

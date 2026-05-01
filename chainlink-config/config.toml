@@ -1,7 +1,3 @@
-[Feature]
-# Due to the event-driven nature of the Direct Request model, this component is critical.
-LogPoller = true # default false
-
 [Log]
 Level = 'warn' # debug or info would slow down I/O
 
@@ -35,13 +31,9 @@ WSURL = 'ws://hardhat:8545'
 [EVM.Transactions]
 # This is the most important for stress testing:
 # How many transactions can be in the mempool at once (unconfirmed)
-MaxInFlight = 512 # default 16
+MaxInFlight = 0 # default 16, 0 means disable
 # How many transactions can wait in the DB for processing
-MaxQueued = 5000 # default 250
-# How often to check pending transactions
-# ReaperInterval = '1h' # default 1h
-# How often to retry sending transactions, if hardhat block interval is less than 1s, this should be less than that
-# ResendAfterThreshold = '1m' # default 1m
+MaxQueued = 0 # default 250, 0 means disable
 
 [EVM.GasEstimator]
 # For local testing, it's advisable to use a fixed price to save on estimateGas calls

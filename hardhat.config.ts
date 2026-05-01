@@ -31,7 +31,7 @@ const config: HardhatUserConfig = {
 			chainId: 31337,
             mining: {
                 auto: false,
-                interval: 200
+                interval: 1000
             }
 		},
 		localhost: {

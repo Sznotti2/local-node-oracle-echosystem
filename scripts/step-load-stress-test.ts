@@ -12,7 +12,7 @@ const TEST_SCENARIOS = [
     25,
     50,
     75,
-    100,/*
+    100,
     150,
     200,
     250, 
@@ -21,7 +21,7 @@ const TEST_SCENARIOS = [
     1000, 
     1500,
     2000, 
-    3000,*/
+    3000,
 ];
 const TIMEOUT_FOR_BATCH = [
     10,
@@ -97,7 +97,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
                 if (!requestMap.has(requestId)) {
                     requestMap.set(requestId, {
                         sendTime: burstStartTime, 
-                        createdTime: now, // accurate to the nearest 200ms polling tick
+                        createdTime: now, // accurate to the nearest 20ms polling tick
                         isComplete: false
                     });
 
@@ -117,7 +117,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
                 let data = requestMap.get(requestId);
 
                 if (data && !data.fulfilledTime) {
-                    data.fulfilledTime = now; // Accurate to the nearest 200ms polling tick
+                    data.fulfilledTime = now; // Accurate to the nearest 20ms polling tick
                     if (data.createdTime && !data.isComplete) {
                         data.isComplete = true;
                         receivedCount++;
@@ -131,7 +131,7 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
                 }
             }
         } catch (e: any) {
-			console.warn(`Warning: Error during event polling - ${e.message}`);
+			console.warn(`Warning: Error during event polling - ${e}`);
         }
 
         await new Promise(r => setTimeout(r, checkInterval));
@@ -173,8 +173,8 @@ async function runBatch(requestCount: number, consumer: any, provider: any): Pro
         successCount: receivedCount,
         successRate: (receivedCount / requestCount) * 100,
         avgNodeLatency: avgOracleLatency / 1000, // only Chainlink speed
-        avgTotalLatency: avgEndToEndLatency / 1000, // from send to fulfillment
-        effectiveDuration: effectiveDuration,
+        avgLatency: avgEndToEndLatency / 1000, // from send to fulfillment
+        duration: effectiveDuration,
         tps: receivedCount / effectiveDuration,
         totalRequestCostETH: ethers.formatEther(totalRequestCost),
         totalFulfillmentCostETH: ethers.formatEther(totalFulfillmentCost),
@@ -196,7 +196,7 @@ async function main() {
         const result = await runBatch(count, consumer, provider);
         allResults.push(result);
 
-        // console.log(` -> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(3)}ms | Effective Latency: ${result.effectiveDuration.toFixed(3)}ms | TPS: ${result.tps.toFixed(3)}`);
+        // console.log(` -> Success: ${result.successRate.toFixed(1)}% | Node Latency: ${result.avgNodeLatency.toFixed(3)}ms | Effective Latency: ${result.duration.toFixed(3)}ms | TPS: ${result.tps.toFixed(3)}`);
 
         // stop if success rate drops below 100%
         if (result.successRate < 100) {
@@ -213,11 +213,11 @@ async function main() {
     console.log("\n\n=======================================================================================================================");
     console.log("                               FINAL SUMMARY REPORT                                     ");
     console.log("=======================================================================================================================");
-    console.log("Requests | TPS\t| Node Latency\t| avgTotalLatency\t| Effective Duration \t| Request Cost (ETH)\t| Node Cost (ETH)\t| Errors");
+    console.log("Requests | TPS\t| Node Latency\t| avg Latency\t| Duration \t| Request Cost (ETH)\t| Node Cost (ETH)\t| Errors");
     console.log("-----------------------------------------------------------------------------------------------------------------------");
     
     allResults.forEach(r => {
-        console.log(`${r.count}\t| ${r.tps.toFixed(0)}\t| ${r.avgNodeLatency.toFixed(3)} ms \t| ${r.avgTotalLatency.toFixed(3)} ms  \t\t| ${r.effectiveDuration.toFixed(3)} ms \t\t| ${Number(r.totalRequestCostETH).toFixed(6)}\t\t| ${Number(r.totalFulfillmentCostETH).toFixed(6)}\t\t| ${r.error || "-"}`);
+        console.log(`${r.count}\t| ${r.tps.toFixed(0)}\t| ${r.avgNodeLatency.toFixed(3)} ms \t| ${r.avgLatency.toFixed(3)} ms  \t| ${r.duration.toFixed(3)} ms \t| ${Number(r.totalRequestCostETH).toFixed(6)}\t\t| ${Number(r.totalFulfillmentCostETH).toFixed(6)}\t\t| ${r.error || "-"}`);
     });
     console.log("=======================================================================================================================");
 
@@ -228,7 +228,7 @@ async function main() {
 
     allResults.forEach(r => {
         //! change these based on the tests 'Base', '1'
-        csvContent += `Complete,${NUMBER_OF_NODES},${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.effectiveDuration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
+        csvContent += `Complete,${NUMBER_OF_NODES},${r.count},${r.successRate.toFixed(0)},${r.avgNodeLatency.toFixed(3)},${r.avgLatency.toFixed(3)},${r.duration.toFixed(3)},${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)}\n`;
     });
 
     fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);

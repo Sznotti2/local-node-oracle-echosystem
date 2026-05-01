@@ -151,8 +151,8 @@ export interface BatchResult {
     successCount: number;
     successRate: number;
     avgNodeLatency: number;
-    avgTotalLatency: number;
-    effectiveDuration: number;
+    avgLatency: number;
+    duration: number;
     tps: number;
     totalRequestCostETH: string;
     totalFulfillmentCostETH: string;
