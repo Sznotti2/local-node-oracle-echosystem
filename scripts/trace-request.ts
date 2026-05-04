@@ -95,7 +95,7 @@ async function main() {
         const tx = await consumer.requestTemperature("London", JOB_ID);
         console.log(`Transaction Sent: ${tx.hash}`);
         console.log("Waiting for block confirmation...");
-        await tx.wait(1);
+        await tx.wait();
         console.log("Transaction Mined! Events should appear above shortly.");
     } catch (e) {
         console.error("Hiba a küldéskor:", e);

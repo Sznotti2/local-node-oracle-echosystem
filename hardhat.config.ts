@@ -31,8 +31,8 @@ const config: HardhatUserConfig = {
 			chainId: 31337,
             mining: {
                 auto: false,
-                interval: 1000
-            }
+                interval: 200
+            },
 		},
 		localhost: {
 			// used by the clients to connect to hardhats JSON-RPC server

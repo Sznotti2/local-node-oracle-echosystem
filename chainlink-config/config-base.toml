@@ -1,6 +1,3 @@
-[Feature]
-LogPoller = true
-
 [Log]
 Level = 'warn'
 

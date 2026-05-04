@@ -90,6 +90,91 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
         }
     }
 
+
+    struct AggregationSession {
+        bytes32 location;
+        uint8 responsesReceived;
+        uint8 expectedResponses;
+        uint256 sumTemperatures;
+        bool isCompleted;
+    }
+
+    uint256 public currentSessionId;
+    mapping(bytes32 => AggregationSession) public sessions;    
+    mapping(bytes32 => bytes32) public requestToSessionId; // Ebből tudjuk, hogy egy adott Chainlink RequestID melyik körhöz tartozik
+
+    event RequestCreated2(bytes32 indexed requestId, string location);
+    event RequestFulfilled2(bytes32 indexed requestId, uint256 temperature);
+
+    function requestTemperature2(
+        string memory city,
+        string[] memory jobIds
+    ) public onlyOwner {
+        currentSessionId++;
+        bytes32 sessionId = bytes32(currentSessionId);
+
+        sessions[sessionId] = AggregationSession({
+            location: stringToBytes32(city),
+            responsesReceived: 0,
+            expectedResponses: uint8((jobIds.length * 2) / 3), // 66%
+            sumTemperatures: 0,
+            isCompleted: false
+        });
+
+        string memory apiUrl = string.concat(
+            "http://local-api:5000/weather?city=",
+            city
+        );
+
+        for (uint i = 0; i < jobIds.length; i++) {
+            Chainlink.Request memory req = _buildChainlinkRequest(
+                stringToBytes32(jobIds[i]),
+                address(this),
+                this.fulfillTemperature2.selector
+            );
+
+            req._add("apiUrl", apiUrl);
+            req._add("path", "temperature");
+
+            bytes32 requestId = _sendChainlinkRequestTo(operator, req, fee);
+            
+            requestToSessionId[requestId] = sessionId;
+        }
+        emit RequestCreated2(sessionId, city);
+    }
+
+    function fulfillTemperature2(
+        bytes32 _requestId,
+        uint256 _temp
+    ) public recordChainlinkFulfillment(_requestId) {
+        bytes32 sessionId = requestToSessionId[_requestId];
+        AggregationSession storage session = sessions[sessionId];
+
+        if (session.isCompleted) {
+            return; 
+        }
+        require(session.expectedResponses > 0, "Invalid session");
+
+        session.sumTemperatures += _temp;
+        session.responsesReceived++;
+
+        // ha minden node válaszolt, aggregálunk és végrehajtjuk a fő logikát
+        if (session.responsesReceived >= session.expectedResponses) {
+            session.isCompleted = true;
+            
+            uint256 aggregatedTemp = session.sumTemperatures / session.responsesReceived;
+            
+            temperature = aggregatedTemp;
+            emit RequestFulfilled2(sessionId, aggregatedTemp);
+
+            // Evaluate and pay matching policies for this request/location
+            // if (session.location != bytes32(0)) {
+            //     _evaluatePoliciesForLocation(session.location, aggregatedTemp);
+            // }
+        }
+    }
+
+
     // Internal: evaluate policies for a location and pay those that meet the condition.
     function _evaluatePoliciesForLocation(bytes32 loc, uint256 recordedTemp) internal {
         uint256[] storage ids = policiesByLocation[loc];

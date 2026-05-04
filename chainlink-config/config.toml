@@ -17,11 +17,11 @@ MaxOpenConns = 200 # default is 100, need to add -c max_connections=200 for post
 ChainID = '31337'
 Enabled = true
 LinkContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
-MinIncomingConfirmations = 1 # default 3
+MinIncomingConfirmations = 1 # default 3, matches the job spec
 # How often to poll for logs (in ms, important for HTTP but also affects WS fallback)
-LogPollInterval = '3s' # default 15s, reduce idle time
+LogPollInterval = '5s' # default 15s, reduce idle time
 FinalityDepth = 1 # default 50, transactions are final after we see them in one block
-NoNewHeadsThreshold = '3m' # Default '3m'
+NoNewHeadsThreshold = '15m' # Default '3m', marks rpc endpoint as out-of-sync if no heads are received for this duration
 
 [[EVM.Nodes]]
 Name = 'Hardhat'
@@ -31,9 +31,9 @@ WSURL = 'ws://hardhat:8545'
 [EVM.Transactions]
 # This is the most important for stress testing:
 # How many transactions can be in the mempool at once (unconfirmed)
-MaxInFlight = 0 # default 16, 0 means disable
+MaxInFlight = 10000 # default 16, 0 means disable
 # How many transactions can wait in the DB for processing
-MaxQueued = 0 # default 250, 0 means disable
+MaxQueued = 10000 # default 250, 0 means disable
 
 [EVM.GasEstimator]
 # For local testing, it's advisable to use a fixed price to save on estimateGas calls
@@ -46,6 +46,7 @@ PriceDefault = '1 gwei' # default '100 gwei', automatically set by ChainID, in c
 BlockHistorySize = 0 # default 8
 
 [EVM.NodePool]
+PollInterval = '100ms'
 #  how many consecutive polls must fail in order to mark a node as unreachable.
 # PollFailureThreshold = 5 # default 5, Set to zero to disable poll checking.
 

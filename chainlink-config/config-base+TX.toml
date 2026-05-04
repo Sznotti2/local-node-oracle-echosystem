@@ -19,5 +19,5 @@ HTTPURL = 'http://hardhat:8545'
 WSURL = 'ws://hardhat:8545'
 
 [EVM.Transactions]
-MaxInFlight = 0 # default 16
-MaxQueued = 0 # default 250
+MaxInFlight = 10000 # default 16
+MaxQueued = 10000 # default 250

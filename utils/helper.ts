@@ -127,6 +127,8 @@ export function getCredentialsOf(nodeId: number): NodeCredentials {
 }
 
 
+export const avg = (arr: number[]) =>
+	arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
 
 const CITIES = [
@@ -140,19 +142,17 @@ export function getRandomCity(): string {
 }
 
 export interface RequestData {
-    sendTime: number;
-    createdTime?: number;
-    fulfilledTime?: number;
-    isComplete: boolean;
+    sentTxAt: number;
+    fulfilledAt?: number;
+    createdDetectedAt?: number;
 }
 
 export interface BatchResult {
     count: number;
-    successCount: number;
     successRate: number;
     avgNodeLatency: number;
     avgLatency: number;
-    duration: number;
+    duration: number;         // time to last fulfillment (oracle speed)
     tps: number;
     totalRequestCostETH: string;
     totalFulfillmentCostETH: string;

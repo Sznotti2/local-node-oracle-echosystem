@@ -6,30 +6,48 @@ async function main() {
 	const { email, password } = getNodeCredentials();
 
 	const [deployer] = await ethers.getSigners();
-	console.log("Deployer:", deployer.address);
+	console.log(`Deployer:`.padEnd(30) + `${deployer.address}`);
 
 	// Deploy LinkToken
 	const link = await ethers.deployContract("LinkToken");
 	await link.waitForDeployment();
 	const linkAddress = await link.getAddress();
 	updateEnvVariable("LINKTOKEN_ADDRESS", linkAddress);
-	console.log("LinkToken deployed at: ", linkAddress);
+	const linkDeployTx = link.deploymentTransaction();
+	if (linkDeployTx) {
+		const linkReceipt = await linkDeployTx.wait();
+		
+		if (linkReceipt) {
+			const costInWei = linkReceipt.fee; 
+			const costInEth = ethers.formatEther(costInWei);
+			console.log(`LinkToken deployed at:`.padEnd(30) + `${linkAddress} for ${costInEth} ETH`);
+		}
+	}
 
 	// Deploy Operator
 	const operator = await ethers.deployContract("Operator", [linkAddress, deployer.address]);
 	await operator.waitForDeployment();
 	const operatorAddress = await operator.getAddress();
 	updateEnvVariable("OPERATOR_ADDRESS", operatorAddress);
-	console.log("Operator deployed at: ", operatorAddress);
+	const operatorDeployTx = operator.deploymentTransaction();
+	if (operatorDeployTx) {
+		const operatorReceipt = await operatorDeployTx.wait();
+		
+		if (operatorReceipt) {
+			const costInWei = operatorReceipt.fee; 
+			const costInEth = ethers.formatEther(costInWei);
+			console.log(`Operator deployed at:`.padEnd(30) + `${operatorAddress} for ${costInEth} ETH`);
+		}
+	}
 
 	// Authorize the node wallet address
 	const txAuth = await operator.setAuthorizedSenders([NODE_ADDRESS]);
 	await txAuth.wait();
-	console.log("Authorized sender set:", NODE_ADDRESS);
+	console.log(`Authorized sender set:`.padEnd(30) + `${NODE_ADDRESS}`);
+
 
 	console.log("Creating Chainlink Job...");
 	try {
-		console.log(`Sign in to the Chainlink API with the ${email} account...`);
 		const loginResponse = await fetch(`${CHAINLINK_URL}/sessions`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -50,7 +68,7 @@ name = "Get > Uint256"
 maxTaskDuration = "0s"
 contractAddress = "${operatorAddress}"
 evmChainID = "31337"
-minIncomingConfirmations = 0
+minIncomingConfirmations = 1
 observationSource = """
 	decode_log   [type="ethabidecodelog"
 				abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
@@ -73,7 +91,6 @@ observationSource = """
 """
     `;
 
-		console.log("Submitting job to Chainlink Node...");
 		const jobResponse = await fetch(`${CHAINLINK_URL}/v2/jobs`, {
 			method: "POST",
 			headers: {
@@ -90,7 +107,7 @@ observationSource = """
 
 		const jobData = await jobResponse.json();
 		console.log(`Job successfully created!`);
-		console.log(`External Job ID: ${jobData.data.attributes.externalJobID}`);
+		console.log(`External Job ID:`.padEnd(30) + `${jobData.data.attributes.externalJobID}`);
 		updateEnvVariable("JOB_ID", jobData.data.attributes.externalJobID.replace(/-/g, ""));
 
 	} catch (error) {
@@ -103,7 +120,16 @@ observationSource = """
 	await consumer.waitForDeployment();
 	const consumerAddress = await consumer.getAddress();
 	updateEnvVariable("CONSUMER_ADDRESS", consumerAddress);
-	console.log("ConsumerContract deployed at:", consumerAddress);
+	const consumerDeployTx = consumer.deploymentTransaction();
+	if (consumerDeployTx) {
+		const consumerReceipt = await consumerDeployTx.wait();
+		
+		if (consumerReceipt) {
+			const costInWei = consumerReceipt.fee; 
+			const costInEth = ethers.formatEther(costInWei);
+			console.log(`ConsumerContract deployed at: `.padEnd(30) + `${consumerAddress} for ${costInEth} ETH`);
+		}
+	}
 
 	// Mint test LINK to deployer so we can fund the consumer and the node
 	const grantRoleTx = await link.grantMintRole(deployer.address);

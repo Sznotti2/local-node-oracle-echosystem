@@ -31,6 +31,7 @@ as it has solutions to common problems.
 	- [Troubleshooting](#troubleshooting)
 		- [Port is already in use](#port-is-already-in-use)
 		- [Chainlink node is unresponsive/doesn't register new requests / "RPC endpoint detected out of sync" in chainlink logs](#chainlink-node-is-unresponsivedoesnt-register-new-requests--rpc-endpoint-detected-out-of-sync-in-chainlink-logs)
+		- [Access denied for artifacts directory](#access-denied-for-artifacts-directory)
 
 ## Core Components
 The system operates as a microservices cluster orchestrated via Docker Compose:
@@ -53,7 +54,7 @@ Clone and Install Dependencies
 git clone https://github.com/Sznotti2/local-node-oracle-echosystem.git
 cd local-node-oracle-echosystem
 npm i
-docker compose up -d --build # it will take some time
+docker compose up -d --build && docker compose logs -f contracts-deploy # it will take some time
 ```
 
 The docker compose command will build and start all containers in detached mode using the `-d` flag.
@@ -192,4 +193,10 @@ docker compose restart chainlink
 or everithing:
 ```bash
 docker compose down -v && docker compose up -d
+```
+
+### Access denied for artifacts directory
+
+```bash
+sudo chown -R $USER:$USER .
 ```
