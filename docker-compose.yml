@@ -17,6 +17,12 @@ services:
       context: .  
       dockerfile: Dockerfile.hardhat
     container_name: hardhat-node
+    sysctls:
+      # Send a keepalive probe after 60s of idle, then every 10s, give up after 5 failed probes
+      # fixed rpc endpoint detected out of sync!
+      - net.ipv4.tcp_keepalive_time=60
+      - net.ipv4.tcp_keepalive_intvl=10
+      - net.ipv4.tcp_keepalive_probes=5
     ports:
       - "8545:8545" # So that the test script can also access your machine
     networks:
@@ -24,6 +30,8 @@ services:
     volumes:
       - .:/app             # we mirror the entire folder
       - /app/node_modules  # EXCEPTION: the container uses its own node_modules, not the poject's!
+      - /app/artifacts
+      - /app/typechain-types
     healthcheck:
       test: ["CMD", "curl", "-f", "-X", "POST", "-H", "Content-Type: application/json", "--data", '{"jsonrpc":"2.0","method":"net_version","params":[],"id":67}', "http://localhost:8545"]
       interval: 5s

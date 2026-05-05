@@ -46,11 +46,8 @@ PriceDefault = '1 gwei' # default '100 gwei', automatically set by ChainID, in c
 BlockHistorySize = 0 # default 8
 
 [EVM.NodePool]
-PollInterval = '100ms'
-#  how many consecutive polls must fail in order to mark a node as unreachable.
-# PollFailureThreshold = 5 # default 5, Set to zero to disable poll checking.
+PollInterval = '1s' # reduces load on Hardhat's event loop
 
 [JobPipeline]
-# keep the last 50 successful runs in the DB and UI, setting to 0 increases performance
+# keep the last 50 successful runs in the DB and UI
 MaxSuccessfulRuns = 50 # default 10000
-# ResultWriteQueueDepth = 1000

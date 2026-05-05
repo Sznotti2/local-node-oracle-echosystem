@@ -18,20 +18,14 @@ as it has solutions to common problems.
 		- [Request Tracing (Demo)](#request-tracing-demo)
 		- [System Diagnostics](#system-diagnostics)
 		- [Test the Network](#test-the-network)
-			- [Basic Stress Test](#basic-stress-test)
 			- [Step-load Stress Test](#step-load-stress-test)
 	- [Running multiple Chainlink nodes](#running-multiple-chainlink-nodes)
-		- [Balances](#balances)
-			- [Step-load Stress Test](#step-load-stress-test-1)
-		- [Useful Commands \& Monitoring](#useful-commands--monitoring)
 		- [Metrics gathered:](#metrics-gathered)
-		- [Useful Commands \& Monitoring](#useful-commands--monitoring-1)
+		- [Useful Commands \& Monitoring](#useful-commands--monitoring)
 	- [Configuration \& Optimization](#configuration--optimization)
 	- [Project Structure](#project-structure)
 	- [Troubleshooting](#troubleshooting)
 		- [Port is already in use](#port-is-already-in-use)
-		- [Chainlink node is unresponsive/doesn't register new requests / "RPC endpoint detected out of sync" in chainlink logs](#chainlink-node-is-unresponsivedoesnt-register-new-requests--rpc-endpoint-detected-out-of-sync-in-chainlink-logs)
-		- [Access denied for artifacts directory](#access-denied-for-artifacts-directory)
 
 ## Core Components
 The system operates as a microservices cluster orchestrated via Docker Compose:
@@ -54,10 +48,9 @@ Clone and Install Dependencies
 git clone https://github.com/Sznotti2/local-node-oracle-echosystem.git
 cd local-node-oracle-echosystem
 npm i
-docker compose up -d --build && docker compose logs -f contracts-deploy # it will take some time
+make up # it will take some time
+make help # for available commands
 ```
-
-The docker compose command will build and start all containers in detached mode using the `-d` flag.
 
 ## Running Experiments
 This project includes specialized scripts to trace transactions and perform load testing. All scripts should be run from your host machine.
@@ -80,11 +73,11 @@ npm run balance
 
 It is advised to run tests with performance monitoring software as it *will* push both your system and this network to its *limits*,
 
-#### Basic Stress Test
+<!-- #### Basic Stress Test
 Simple test script that will prompt you how many requests you want to send. 
 ```bash
 npm run stress-test
-```
+``` -->
 
 #### Step-load Stress Test
 This script incrementally increases the load (e.g., 10 -> 50 -> 100 -> 1000 requests) to find the exact point where the system fails or latency becomes unacceptable.
@@ -100,29 +93,8 @@ cp -r nodes/chainlink-config-1 nodes/chainlink-config-3
 cp -r nodes/chainlink-config-1 nodes/chainlink-config-4
 cp -r nodes/chainlink-config-1 nodes/chainlink-config-5
 # change the postgres reference to the correct database (cl-postgres-<config-number>:5432) in each nodes secrests.toml file 
-docker compose -f docker-compose-don.yml up -d --build
-```
-
-### Balances
-```bash
-npm run balance-don
-```
-
-#### Step-load Stress Test
-
-```bash
-npm run step-test-don
-```
-
-### Useful Commands & Monitoring
-
-```bash
-docker compose -f docker-compose-don.yml up -d
-docker compose -f docker-compose-don.yml down -v
-docker compose -f docker-compose-don.yml restart <chainlink | api | hardhat | cl-postgres>
-docker compose -f docker-compose-don.yml logs -f <chainlink | api | hardhat | cl-postgres>
-docker compose -f docker-compose-don.yml logs -f --tail=50 <chainlink | api | hardhat | cl-postgres>
-docker compose -f docker-compose-don.yml ps
+make don
+make up
 ```
 
 ### Metrics gathered:
@@ -137,7 +109,7 @@ docker compose up -d # runs all containers in detached mode
 docker compose down -v # stops all containers and deletes databse
 docker compose restart <chainlink | api | hardhat | cl-postgres> # restarts container
 docker compose logs -f <chainlink | api | hardhat | cl-postgres> # prints live logs of specified container
-docker compose logs -f --tail=50 <chainlink | api | hardhat | cl-postgres> # last 50 Hardhat Logs
+docker compose logs --tail=50 <chainlink | api | hardhat | cl-postgres> # last 50 Hardhat Logs
 docker compose ps # shows container status
 ```
 
@@ -180,23 +152,4 @@ sudo systemctl stop postgres
 lsof -i :PORT NUMBER # from this you'll see all the running processes
 # look for the PROCESS ID or PID
 kill PID
-```
-
-### Chainlink node is unresponsive/doesn't register new requests / "RPC endpoint detected out of sync" in chainlink logs
-This can happen if the Chainlink Node does not receive *"life signal"* from hardhat
-
-To fix it restart chainlink container:
-```bash
-docker compose restart chainlink
-```
-
-or everithing:
-```bash
-docker compose down -v && docker compose up -d
-```
-
-### Access denied for artifacts directory
-
-```bash
-sudo chown -R $USER:$USER .
 ```

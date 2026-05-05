@@ -46,7 +46,7 @@ PriceDefault = '1 gwei' # default '100 gwei', automatically set by ChainID, in c
 BlockHistorySize = 0 # default 8
 
 [EVM.NodePool]
-PollInterval = '100ms'
+PollInterval = '1s'
 #  how many consecutive polls must fail in order to mark a node as unreachable.
 # PollFailureThreshold = 5 # default 5, Set to zero to disable poll checking.
 

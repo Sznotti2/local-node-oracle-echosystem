@@ -49,10 +49,10 @@ async function runBatch(
 		const txPromise = consumer
 			.requestTemperature2(getRandomCity(), JOB_IDS, {
 				nonce, // bc all requests are sent in a tight loop, we need to manually manage nonces to avoid nonce conflicts
-				gasPrice: ethers.parseUnits("1", "gwei"), // fixed gas price prevents estimation RPC calls
 			})
 			.then((tx: any) => txSendTimes.set(tx.hash, Date.now()))
-			.catch(() => {
+			.catch((e: any) => {
+				if (sendErrors === 0) console.error("First send error:", e.message);
 				sendErrors++;
 			});
 		txPromises.push(txPromise);
