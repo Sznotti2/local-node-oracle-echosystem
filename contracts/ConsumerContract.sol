@@ -168,9 +168,9 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
             emit RequestFulfilled2(sessionId, aggregatedTemp);
 
             // Evaluate and pay matching policies for this request/location
-            // if (session.location != bytes32(0)) {
-            //     _evaluatePoliciesForLocation(session.location, aggregatedTemp);
-            // }
+            if (session.location != bytes32(0)) {
+                _evaluatePoliciesForLocation(session.location, aggregatedTemp);
+            }
         }
     }
 
@@ -188,7 +188,7 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
                 emit PolicyExpired(pid);
                 continue;
             }
-            // If recordedTemp is higher than threshold => pay
+            // If recordedTemp is higher than threshold
             if (recordedTemp > policy.threshold) {
                 uint256 amount = policy.payout;
                 // Pay beneficiary if contract has funds
@@ -259,6 +259,7 @@ contract ConsumerContract is ChainlinkClient, ConfirmedOwner {
 		require(msg.sender == policy.purchaser || msg.sender == owner(), "you are not allowed to cancel");
 		require(policy.active, "policy not active");
 		require(!policy.paid, "policy already paid");
+        require(block.timestamp <= policy.start + policy.duration, "policy has expired");
 		policy.active = false;
 		// Refund premium to purchaser
 		uint256 refund = policy.premium;
