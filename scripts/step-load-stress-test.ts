@@ -1,230 +1,368 @@
 import { ethers } from "hardhat";
-import * as fs from "fs";
-import { getEnvVariables, getRandomCity, RequestData, BatchResult, avg } from "../utils/helper";
+import fs from "fs";
+import { getEnvVariables, getEnvVariablesDon, getRandomCity, RequestData, BatchResult, avg } from "../utils/helper";
 
-const { CONSUMER_ADDRESS, JOB_ID, NUMBER_OF_NODES } = getEnvVariables();
+const { CONSUMER_ADDRESS, JOB_ID, NUMBER_OF_NODES, WS_URL } = getEnvVariables();
+const { JOB_IDS } = getEnvVariablesDon();
 const TEST_SCENARIOS = [
-	{ batchSize: 1,    timeoutSecs: 5  },
-	{ batchSize: 5,    timeoutSecs: 5  },
-	{ batchSize: 10,   timeoutSecs: 10 },
-	{ batchSize: 15,   timeoutSecs: 10 },
-	{ batchSize: 20,   timeoutSecs: 12 },
-	{ batchSize: 25,   timeoutSecs: 12 },
-	{ batchSize: 50,   timeoutSecs: 15 },
-	{ batchSize: 75,   timeoutSecs: 20 },
-	{ batchSize: 100,  timeoutSecs: 25 },
-	{ batchSize: 150,  timeoutSecs: 25 },
-	{ batchSize: 200,  timeoutSecs: 30 },
-	{ batchSize: 250,  timeoutSecs: 30 },
-	{ batchSize: 500,  timeoutSecs: 30 },
-	{ batchSize: 750,  timeoutSecs: 35 }, // Watch out! Beyond this point, RAM is nothing but a distant memory
-	{ batchSize: 1000, timeoutSecs: 40 },
-	{ batchSize: 1500, timeoutSecs: 50 },
-	{ batchSize: 2000, timeoutSecs: 50 },
-	{ batchSize: 2500, timeoutSecs: 60 },
-	{ batchSize: 3000, timeoutSecs: 60 },
+	1,
+	5,
+	10,
+	15,
+	20,
+	25,
+	50,
+	75,
+	100,
+	150,
+	200,
+	250,
+	500,
+	750, // Watch out! Beyond this point, RAM is nothing but a distant memory
+	1000,
+	1500,
+	2000,
+	2500,
+	3000,
 ];
+
+// How long to wait for a new event before assuming the oracle is stuck/dead
+const IDLE_TIMEOUT_SECONDS = 30;
+const ABSOLUTE_MAX_TIMEOUT_SECONDS = 600;
 const COOLDOWN_SECONDS = 5;
-const CHECK_INTERVAL_MS = 100;
+
+let createdEvent: string;
+let fulfilledEvent: string;
+if (NUMBER_OF_NODES == 1) {
+    createdEvent = "RequestCreated";
+    fulfilledEvent = "RequestFulfilled";
+} else {
+    createdEvent = "RequestCreated2";
+    fulfilledEvent = "RequestFulfilled2";
+}
 
 async function runBatch(
-	provider: any,
-	signerAddress: any,
-	consumer: any,
-	scenario: { batchSize: number; timeoutSecs: number }
+    requestCount: number,
+    consumer: any,
+    wsConsumer: any,
+    provider: any,
+    userAddress: string
 ): Promise<BatchResult> {
-	const { batchSize, timeoutSecs } = scenario;
+    return new Promise(async (resolve) => {
+        const requestMap = new Map<string, RequestData>();
+        const txSendTimes = new Map<string, number>();
+        const requestTxHashes = new Set<string>();
+        const fulfillmentTxHashes = new Set<string>();
 
-	let startBlock = await provider.getBlockNumber();
-	const burstStartTime = Date.now();
+        let receivedCount = 0;
+        let sendErrors = 0;
+        let lastActivityTime = Date.now();
+        let isBatchFinished = false;
 
-	let currentNonce = await provider.getTransactionCount(signerAddress, "latest");
-	const txSendTimes = new Map<string, number>();
-	const txPromises: Promise<void>[] = [];
-	let sendErrors = 0;
+        const absoluteMaxTime = Date.now() + (ABSOLUTE_MAX_TIMEOUT_SECONDS * 1000);
 
-	for (let i = 0; i < batchSize; i++) {
-		const nonce = currentNonce++;
-		const txPromise = consumer
-			.requestTemperature(getRandomCity(), JOB_ID, {
-				nonce, // bc all requests are sent in a tight loop, we need to manually manage nonces to avoid nonce conflicts
-			})
-			.then((tx: any) => txSendTimes.set(tx.hash, Date.now()))
-			.catch((e: any) => {
-				if (sendErrors === 0) console.error("First send error:", e.message);
-				sendErrors++;
-			});
-		txPromises.push(txPromise);
-	}
-	await Promise.all(txPromises);
+        // ==========================================
+        // FINALIZATION & GAS CALCULATION
+        // ==========================================
+        const finishBatch = async (errorMsg?: string) => {
+            if (isBatchFinished) return;
+            isBatchFinished = true;
 
-	const sentCount = batchSize - sendErrors;
-	console.log(`\nSent ${sentCount}/${batchSize} requests. Waiting for fulfillment...`);
+            // Clean up event listeners and intervals to prevent memory leaks
+            wsConsumer.removeAllListeners(createdEvent);
+            wsConsumer.removeAllListeners(fulfilledEvent);
+            clearInterval(monitorInterval);
 
-	// POLLING & MEASUREMENT PHASE
-	let elapsedTime = 0;
-	const requestMap = new Map<string, RequestData>(); // requestId -> RequestData
-	const createdTxHashes = new Set<string>();
-	const pendingFulfillments = new Map<string, number>(); // requestId -> fulfilledAt timestamp, buffer for fulfillments seen before their creation event
-	const fulfilledTxHashes = new Set<string>();
-	const createdFilter = consumer.filters.RequestCreated();
-	const fulfilledFilter = consumer.filters.RequestFulfilled();
+            const now = Date.now();
+            const idleSecondsLeft = Math.max(0, Math.ceil((IDLE_TIMEOUT_SECONDS * 1000 - (now - lastActivityTime)) / 1000));
+            process.stdout.write(`\rListening... (${receivedCount}/${requestCount} fulfilled) | Idle Timeout in: ${idleSecondsLeft}s   \n`);
 
-	while (fulfilledTxHashes.size < sentCount && elapsedTime < timeoutSecs * 1000) {
-		try {
-			const currentBlock = await provider.getBlockNumber();
+            console.log(`Batch finished. Calculating gas costs and latencies...`);
 
-			if (currentBlock > startBlock) {
-				const [createdEvents, fulfilledEvents] = await Promise.all([
-					consumer.queryFilter(createdFilter, startBlock, currentBlock),
-					consumer.queryFilter(fulfilledFilter, startBlock, currentBlock),
-				]);
+            let totalRequestCost = 0n;
+            let totalFulfillmentCost = 0n;
+            let sumRequestGasPrice = 0n;
+            let sumFulfillmentGasPrice = 0n;
 
-				// RequestCreated events
-				for (const event of createdEvents) {
-					const requestId = event.args.requestId;
-					if (!requestMap.has(requestId)) {
-						const sentTxAt = txSendTimes.get(event.transactionHash) ?? burstStartTime;
-						const createdDetectedAt = Date.now();
-						requestMap.set(requestId, { sentTxAt, createdDetectedAt });
-						createdTxHashes.add(event.transactionHash);
+            // Fetch receipts asynchronously after the fast-paced listening phase is done
+            for (const hash of requestTxHashes) {
+                try {
+                    const receipt = await provider.getTransactionReceipt(hash);
+                    if (receipt) {
+                        const gasUsed = receipt.gasUsed as bigint;
+                        const gasPrice = receipt.gasPrice as bigint;
 
-						if (pendingFulfillments.has(requestId)) {
-							requestMap.get(requestId)!.fulfilledAt = pendingFulfillments.get(requestId);
-							pendingFulfillments.delete(requestId);
-						}
-					}
-				}
+                        totalRequestCost += (gasUsed * gasPrice);
+                        sumRequestGasPrice += gasPrice;
+                    }
+                } catch (e) { }
+            }
 
-				// RequestFulfilled events
-				for (const event of fulfilledEvents) {
-					const requestId = event.args.requestId;
-					const data = requestMap.get(requestId);
+            for (const hash of fulfillmentTxHashes) {
+                try {
+                    const receipt = await provider.getTransactionReceipt(hash);
+                    if (receipt) {
+                        const gasUsed = receipt.gasUsed as bigint;
+                        const gasPrice = receipt.gasPrice as bigint;
 
-					if (data && !data.fulfilledAt) {
-						data.fulfilledAt = Date.now();
-						fulfilledTxHashes.add(event.transactionHash);
-					} else if (!data && !pendingFulfillments.has(requestId)) {
-						pendingFulfillments.set(requestId, Date.now());
-						fulfilledTxHashes.add(event.transactionHash);
-					}
-				}
+                        totalFulfillmentCost += (gasUsed * gasPrice);
+                        sumFulfillmentGasPrice += gasPrice;
+                    }
+                } catch (e) { }
+            }
 
-				startBlock = currentBlock + 1; // queryFilter is end-inclusive
-			}
-		} catch (e: any) {
-			console.warn(`Warning: Error during event polling - ${e}`);
-		}
+            // Calculate Metrics
+            const endToEndLatencies: number[] = [];
+            const oracleLatencies: number[] = [];
+            const writeLatencies: number[] = [];
 
-		await new Promise((r) => setTimeout(r, CHECK_INTERVAL_MS));
-		elapsedTime = Date.now() - burstStartTime;
-		process.stdout.write(
-			`\rProcessing... (${fulfilledTxHashes.size}/${sentCount}), Elapsed: ${(elapsedTime / 1000).toFixed(1)}s`
-		);
-	}
+            let minStartTime = Infinity;
+            let maxEndTime = 0;
+            requestMap.forEach((data) => {
+                if (data.createdDetectedAt && data.fulfilledAt) {
+                    writeLatencies.push(data.createdDetectedAt - data.sentTxAt);
+                    oracleLatencies.push(data.fulfilledAt - data.createdDetectedAt);
+                    endToEndLatencies.push(data.fulfilledAt - data.sentTxAt);
 
-	// Gas cost collection
-	let totalRequestCost = 0n;
-	let totalFulfillmentCost = 0n;
-	const [requestReceipts, fulfillmentReceipts] = await Promise.all([
-		Promise.all([...createdTxHashes].map((hash) => provider.getTransactionReceipt(hash))),
-		Promise.all([...fulfilledTxHashes].map((hash) => provider.getTransactionReceipt(hash))),
-	]);
-	for (const r of requestReceipts) totalRequestCost += (r.gasUsed as bigint) * r.gasPrice;
-	for (const r of fulfillmentReceipts) totalFulfillmentCost += (r.gasUsed as bigint) * r.gasPrice;
+                    if (data.sentTxAt < minStartTime) minStartTime = data.sentTxAt;
+                    if (data.fulfilledAt > maxEndTime) maxEndTime = data.fulfilledAt;
+                }
+            });
 
-	// Statistics
-	const endToEndLatencies: number[] = [];
-	const oracleLatencies: number[] = [];
-	let latestFulfillment = 0;
+            let totalDuration = 0;
+            if (maxEndTime > minStartTime && minStartTime !== Infinity) {
+                totalDuration = (maxEndTime - minStartTime) / 1000;
+            }
 
-	requestMap.forEach((data) => {
-		if (data.createdDetectedAt && data.fulfilledAt) {
-			oracleLatencies.push(data.fulfilledAt - data.createdDetectedAt);
-			endToEndLatencies.push(data.fulfilledAt - data.sentTxAt);
-			if (data.fulfilledAt > latestFulfillment) latestFulfillment = data.fulfilledAt;
-		}
-	});
+            const avgReqGasPrice = requestTxHashes.size > 0 ? sumRequestGasPrice / BigInt(requestTxHashes.size) : 0n;
+            const avgFulfillGasPrice = fulfillmentTxHashes.size > 0 ? sumFulfillmentGasPrice / BigInt(fulfillmentTxHashes.size) : 0n;
 
-	const duration = latestFulfillment > burstStartTime
-			? latestFulfillment - burstStartTime
-			: elapsedTime;
+            resolve({
+                count: requestCount,
+                successCount: receivedCount,
+                successRate: (receivedCount / requestCount) * 100,
+                avgWriteLatency: avg(writeLatencies) / 1000,
+                avgNodeLatency: avg(oracleLatencies) / 1000,
+                avgTotalLatency: avg(endToEndLatencies) / 1000,
+                totalDuration: totalDuration,
+                tps: totalDuration > 0 ? receivedCount / totalDuration : 0,
+                totalRequestCostETH: ethers.formatEther(totalRequestCost),
+                totalFulfillmentCostETH: ethers.formatEther(totalFulfillmentCost),
+                avgRequestGasPriceGwei: ethers.formatUnits(avgReqGasPrice, "gwei"),
+                avgFulfillmentGasPriceGwei: ethers.formatUnits(avgFulfillGasPrice, "gwei"),
+                error: sendErrors > 0 ? `${sendErrors} send errors` : errorMsg
+            });
+        };
 
-	const successRate = sentCount > 0 ? (fulfilledTxHashes.size / sentCount) * 100 : 0;
+        // ==========================================
+        // WEBSOCKET LISTENERS (PUSH MODEL)
+        // ==========================================
+        wsConsumer.on(createdEvent, (requestId: string, ...args: any[]) => {
+            const exactDetectionTime = Date.now();
+            const event = args[args.length - 1]; // Ethers v6 event payload is always the last argument
+            const txHash = event.log ? event.log.transactionHash : event.transactionHash;
 
-	return {
-		count: batchSize,
-		successRate,
-		avgNodeLatency: avg(oracleLatencies),
-		avgLatency: avg(endToEndLatencies),
-		duration,
-		tps: duration > 0 ? fulfilledTxHashes.size / (duration / 1000) : 0,
-		totalRequestCostETH: ethers.formatEther(totalRequestCost),
-		totalFulfillmentCostETH: ethers.formatEther(totalFulfillmentCost),
-	};
+            if (!requestMap.has(requestId)) {
+                // Fallback to detection time if sendTime somehow wasn't recorded yet
+                const exactSendTime = txSendTimes.get(txHash) || exactDetectionTime;
+
+                requestMap.set(requestId, {
+                    sentTxAt: exactSendTime,
+                    createdDetectedAt: exactDetectionTime,
+                    isComplete: false
+                });
+
+                requestTxHashes.add(txHash);
+            }
+        });
+
+        wsConsumer.on(fulfilledEvent, (requestId: string, ...args: any[]) => {
+            const exactDetectionTime = Date.now();
+            const event = args[args.length - 1];
+            const txHash = event.log ? event.log.transactionHash : event.transactionHash;
+            let data = requestMap.get(requestId);
+
+            if (data && !data.fulfilledAt) {
+                data.fulfilledAt = exactDetectionTime;
+
+                if (data.createdDetectedAt && !data.isComplete) {
+                    data.isComplete = true;
+                    receivedCount++;
+                    lastActivityTime = Date.now(); // Reset idle timeout
+                }
+
+                fulfillmentTxHashes.add(txHash);
+            }
+
+            // If we've successfully processed all non-errored requests, finish immediately
+            if (receivedCount >= requestCount - sendErrors) {
+                finishBatch();
+            }
+        });
+
+        // ==========================================
+        // SENDING PHASE (BURST)
+        // ==========================================
+        const txPromises = [];
+        let currentNonce = await provider.getTransactionCount(userAddress);
+
+        for (let i = 0; i < requestCount; i++) {
+            const city   = getRandomCity();
+            const sendTime = Date.now();
+
+            let txPromise;
+            if (NUMBER_OF_NODES == 1) {
+                txPromise = consumer.requestTemperature(city, JOB_ID).then((tx: any) => {
+                    txSendTimes.set(tx.hash, sendTime);
+                    return tx;
+                }).catch((e: any) => {
+                    sendErrors++;
+                    console.error(`\n[Send Error] Nonce: ${currentNonce - 1} | Message: ${e.shortMessage || e.message}`);
+                });
+            } else {
+                txPromise = consumer.requestTemperature2(city, JOB_IDS).then((tx: any) => {
+                    txSendTimes.set(tx.hash, sendTime);
+                    return tx;
+                }).catch((e: any) => {
+                    sendErrors++;
+                    console.error(`\n[Send Error] Nonce: ${currentNonce - 1} | Message: ${e.shortMessage || e.message}`);
+                });
+            }
+
+            txPromises.push(txPromise);
+        }
+
+        await Promise.all(txPromises);
+        console.log(`All ${requestCount} requests sent. Listening for events via WebSockets...`);
+        lastActivityTime = Date.now(); // Reset timer right after burst finishes
+
+        // ==========================================
+        // TIMEOUT & PROGRESS MONITORING
+        // ==========================================
+        const monitorInterval = setInterval(() => {
+            if (isBatchFinished) return;
+
+            const now = Date.now();
+            const idleSecondsLeft = Math.ceil((IDLE_TIMEOUT_SECONDS * 1000 - (now - lastActivityTime)) / 1000);
+
+            process.stdout.write(`\rListening... (${receivedCount}/${requestCount} fulfilled) | Idle Timeout in: ${Math.max(0, idleSecondsLeft)}s   `);
+
+            if (now - lastActivityTime > (IDLE_TIMEOUT_SECONDS * 1000)) {
+                console.log(`\n⚠️ Idle timeout reached: No activity from Oracle for ${IDLE_TIMEOUT_SECONDS} seconds.`);
+                finishBatch("Timeout");
+            } else if (now > absoluteMaxTime) {
+                console.log(`\n⚠️ Absolute timeout reached.`);
+                finishBatch("Timeout");
+            }
+        }, 500); // UI update rate (doesn't block event processing)
+
+    });
+}
+
+async function waitForMempoolToDrain(provider: any, address: string, timeoutMs = 120_000) {
+    const start = Date.now();
+    console.log(`Waiting for mempool to drain...`);
+    while (Date.now() - start < timeoutMs) {
+        const pending = await provider.getTransactionCount(address, "pending");
+        const confirmed = await provider.getTransactionCount(address, "latest");
+        if (pending === confirmed) {
+            console.log(`Mempool clear. (${pending} confirmed txs)`);
+            return;
+        }
+        console.log(`Pending: ${pending - confirmed} unconfirmed txs remaining...`);
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    console.warn(`Mempool drain timeout reached — proceeding anyway.`);
 }
 
 async function main() {
-	console.log("==================================================");
-	console.log("       AUTOMATED BREAKING POINT STRESS TEST       ");
-	console.log("==================================================");
+    console.log("=".repeat(160));
+    console.log(`AUTOMATED BREAKING POINT STRESS TEST OF ${NUMBER_OF_NODES} NODE`.padStart(105));
+    console.log("=".repeat(160));
 
-	const provider = ethers.provider;
-	const signers = await ethers.getSigners();
-	const signerAddress = signers[0].address;
-	const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS as string);
+    console.log(`START TIME: ${new Date().toISOString()}`);
 
-	const allResults: BatchResult[] = [];
-	for (let i = 0; i < TEST_SCENARIOS.length; i++) {
-		const result = await runBatch(provider, signerAddress, consumer, TEST_SCENARIOS[i]);
-		allResults.push(result);
+    // HTTP Provider for sending transactions
+    const consumer = await ethers.getContractAt("ConsumerContract", CONSUMER_ADDRESS as string);
+    // Dedicated WebSocket Provider strictly for listening to events
+    const provider = ethers.provider;
+    const wsProvider = new ethers.WebSocketProvider(WS_URL);
+    const wsConsumer = new ethers.Contract(CONSUMER_ADDRESS as string, consumer.interface, wsProvider);
 
-		if (i < TEST_SCENARIOS.length - 1) {
-			console.log(`\nCooldown period for ${COOLDOWN_SECONDS}s...`);
-			await new Promise((r) => setTimeout(r, COOLDOWN_SECONDS * 1000));
-		}
-	}
+    const signers = await ethers.getSigners();
+    const testUser = signers[0].address;
 
-	console.log("\n\n=== TEST RESULTS ===");
+    const allResults: BatchResult[] = [];
+    for (let i = 0; i < TEST_SCENARIOS.length; i++) {
+        const result = await runBatch(TEST_SCENARIOS[i], consumer, wsConsumer, provider, testUser);
+        allResults.push(result);
+
+        if (result.successRate <= 0) {
+            console.log(`BREAKING POINT REACHED at ${TEST_SCENARIOS[i]} requests!`);
+            console.log(`\tReason: Only ${result.successCount}/${TEST_SCENARIOS[i]} succeeded.`);
+            break;
+        }
+
+        if (i < TEST_SCENARIOS.length - 1) {
+            // console.log(`Cooldown period for ${COOLDOWN_SECONDS}s...\n`);
+            // await new Promise(r => setTimeout(r, COOLDOWN_SECONDS * 1000));
+
+            await waitForMempoolToDrain(provider, testUser);
+        }
+    }
+
+    console.log();
+    console.log("=".repeat(160));
+    console.log("FINAL SUMMARY REPORT".padStart(90));
+    console.log("=".repeat(160));
 	console.log(
-		"Requests".padStart(8), "| Success (%) |", "Duration (ms) |",
-		"Avg E2E Latency (ms) |", "Avg Node Latency (ms) |", "  TPS |",
-		"Request Cost (ETH)    |", "Node Cost (ETH)"
+		"Requests".padStart(8), "| Success (%) |", "Duration (s) |",
+		"Avg Write Latency (s) |", "Avg Node Latency (s) |", "  TPS |",
+		" Req Cost(ETH) | Req Gas(Gwei) | Node Cost(ETH) | Node Gas(Gwei)"
 	);
-	console.log("-".repeat(140));
+    console.log("=".repeat(160));
 
-	allResults.forEach((r) => {
+    allResults.forEach((r) => {
 		console.log(
 			`${r.count.toString().padStart(8)} |` +
 			`${r.successRate.toFixed(0).padStart(12)} |` +
-			`${r.duration.toFixed(0).padStart(14)} |` +
-			`${r.avgLatency.toFixed(0).padStart(21)} |` +
-			`${r.avgNodeLatency.toFixed(0).padStart(22)} |` +
+			`${r.totalDuration.toFixed(2).padStart(13)} |` +
+			`${r.avgWriteLatency.toFixed(3).padStart(22)} |` +
+			`${r.avgNodeLatency.toFixed(3).padStart(21)} |` +
 			`${r.tps.toFixed(0).padStart(6)} |` +
-			` ${r.totalRequestCostETH.padEnd(22)}|` +
-			` ${r.totalFulfillmentCostETH}`
+            `${Number(r.totalRequestCostETH).toFixed(5).padStart(15)} |` +
+            `${Number(r.avgRequestGasPriceGwei).toFixed(2).padStart(14)} |` +
+            `${Number(r.totalFulfillmentCostETH).toFixed(5).padStart(15)} |` +
+            ` ${Number(r.avgFulfillmentGasPriceGwei).toFixed(2).padStart(14)}` 
 		);
-	});
+    });
+    console.log("=".repeat(160));
 
-	// Save results to CSV
-	const csvHeader =
-		"Config,Nodes,Requests,Success Rate (%),Duration (ms)," +
-		"Avg E2E Latency (ms),Avg Node Latency (ms),TPS,Request Cost (ETH),Node Cost (ETH)\n";
-	// !change Config per test run e.g. 'Base'
-	const csvContent = allResults.map((r) =>
-		`Complete,${NUMBER_OF_NODES},${r.count},${r.successRate.toFixed(0)},` +
-		`${r.duration.toFixed(0)},${r.avgLatency.toFixed(0)},${r.avgNodeLatency.toFixed(0)},` +
-		`${r.tps.toFixed(0)},${Number(r.totalRequestCostETH).toFixed(6)},` +
-		`${Number(r.totalFulfillmentCostETH).toFixed(6)}`
-	).join("\n") + "\n";
+    const csvHeader = 
+		"Config,Nodes,Requests,Success Rate (%)," +
+		"Average Write Latency (s),Average Node Latency (s),Average Total Latency (s),Batch Completion Time (s)," +
+		"TPS,Request Cost (ETH),Node Cost (ETH)," +
+		"Avg Request Gas Price (Gwei),Avg Node Gas Price (Gwei)\n";
+    let csvContent = "";
 
-	fs.appendFileSync("stress_test_results.csv", csvHeader + csvContent);
-	console.log("Results appended to stress_test_results.csv");
+    allResults.forEach(r => {
+        csvContent += `Base,${NUMBER_OF_NODES},${r.count},${r.successRate.toFixed(0)},` +
+		`${r.avgWriteLatency.toFixed(3)},${r.avgNodeLatency.toFixed(3)},${r.avgTotalLatency.toFixed(3)},${r.totalDuration.toFixed(3)},` +
+		`${r.tps.toFixed(1)},${Number(r.totalRequestCostETH).toFixed(6)},${Number(r.totalFulfillmentCostETH).toFixed(6)},` +
+		`${Number(r.avgRequestGasPriceGwei).toFixed(2)},${Number(r.avgFulfillmentGasPriceGwei).toFixed(2)}\n`;
+    });
+
+    fs.appendFileSync('stress_test_results.csv', csvHeader + csvContent);
+    console.log("📁 Results appended to stress_test_results.csv");
+    console.log(`END TIME: ${new Date().toISOString()}`);
+
+    // Cleanly close the WebSocket connection before exiting
+    await wsProvider.destroy();
 }
 
 main()
-	.then(() => process.exit(0))
-	.catch((error) => {
-		console.error(error);
-		process.exit(1);
-	});
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

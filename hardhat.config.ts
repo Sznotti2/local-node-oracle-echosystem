@@ -25,13 +25,7 @@ const config: HardhatUserConfig = {
 		hardhat: {
 			// used by "npx hardhat node" command.(server)
 			chainId: 31337,
-			blockGasLimit: 16_777_216, // fix ethers.js retrieved gas limit incorrectly 
-            gas: 2_000_000,           // default gas limit per transaction
-            gasPrice: 1_000_000_000,  // 1 gwei in wei, same as FixedPrice config.toml
-			mining: {
-				auto: false,
-				interval: 200
-			},
+			blockGasLimit: 16_777_216, // fix ethers.js retrieved gas limit incorrectly
 		},
 		localhost: {
 			// used by the clients to connect to hardhats JSON-RPC server

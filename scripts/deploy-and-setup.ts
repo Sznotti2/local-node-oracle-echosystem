@@ -68,7 +68,7 @@ name = "Get > Uint256"
 maxTaskDuration = "0s"
 contractAddress = "${operatorAddress}"
 evmChainID = "31337"
-minIncomingConfirmations = 1
+minIncomingConfirmations = 0
 observationSource = """
 	decode_log   [type="ethabidecodelog"
 				abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
@@ -134,7 +134,7 @@ observationSource = """
 	// Mint test LINK to deployer so we can fund the consumer and the node
 	const grantRoleTx = await link.grantMintRole(deployer.address);
 	await grantRoleTx.wait();
-	const mintAmount = ethers.parseUnits("1000", 18);
+	const mintAmount = ethers.parseUnits("3000", 18);
 	const txMint = await link.mint(deployer.address, mintAmount);
 	await txMint.wait();
 	console.log(`Minted ${ethers.formatUnits(mintAmount, 18)} LINK to deployer`);

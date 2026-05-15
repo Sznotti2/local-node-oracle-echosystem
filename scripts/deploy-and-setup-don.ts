@@ -122,8 +122,8 @@ observationSource = """
 	// Mint test LINK to deployer so we can fund the consumer and the node
     const grantRoleTx = await link.grantMintRole(deployer.address);
     await grantRoleTx.wait();
-	// for 5 node setup, 5000 LINK should be enough for testing
-    const mintAmount = ethers.parseUnits("5000", 18); 
+	// for 5 node setup, 6000 LINK should be enough for testing
+    const mintAmount = ethers.parseUnits("6000", 18); 
     const txMint = await link.mint(deployer.address, mintAmount);
     await txMint.wait();
 	console.log(`Minted ${ethers.formatUnits(mintAmount, 18)} LINK to deployer`);
@@ -131,7 +131,7 @@ observationSource = """
 	// Fund ConsumerContract with LINK so it can make requests
     let tx = await link.transfer(consumerAddress, mintAmount);
     await tx.wait();
-	console.log(`Funded ConsumerContract with 5000 LINK`);
+	console.log(`Funded ConsumerContract with 6000 LINK`);
 
 	console.log("Setup complete!");
 }

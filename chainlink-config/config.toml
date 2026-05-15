@@ -1,5 +1,5 @@
 [Log]
-Level = 'warn' # debug or info would slow down I/O
+Level = 'warn'
 
 [WebServer]
 AllowOrigins = '*'

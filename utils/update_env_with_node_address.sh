@@ -2,6 +2,7 @@
 
 # if there is an environment variable (from Docker), use it, otherwise localhost
 CL_URL="${CHAINLINK_URL:-http://localhost:6688}"
+WS_URL="${WS_RPC_URL:-ws://localhost:6688}"
 ENV_FILE="./.env"
 
 CREDENTIALS_FILE="./chainlink-config/apicredentials" 
